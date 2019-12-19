@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -167,7 +168,6 @@ func (p *Pacemaker) ValidateProposal(b *pmBlock) error {
 	// special valiadte StopCommitteeType
 	// possible 2 rounds of stop messagB
 	if b.ProposedBlockType == StopCommitteeType {
-
 		parent := p.proposalMap[b.Height-1]
 		if parent.ProposedBlockType == KBlockType {
 			p.logger.Info("the first stop committee block")
@@ -175,7 +175,6 @@ func (p *Pacemaker) ValidateProposal(b *pmBlock) error {
 			grandParent := p.proposalMap[b.Height-2]
 			if grandParent.ProposedBlockType == KBlockType {
 				p.logger.Info("The second stop committee block")
-
 			}
 		}
 	}
@@ -318,6 +317,9 @@ func (p *Pacemaker) generateNewQCNode(b *pmBlock) (*pmQuorumCert, error) {
 	}
 	aggSig := p.csReactor.csCommon.AggregateSign(sigs)
 	aggSigBytes := p.csReactor.csCommon.system.SigToBytes(aggSig)
+
+	fmt.Println("===VoterMsgHash===", msgHashes)
+	fmt.Println("====aggrsig====", aggSigBytes, "system", p.csReactor.csCommon.system.ToBytes())
 
 	voterBitArrayStr, _ := p.voterBitArray.MarshalJSON()
 	return &pmQuorumCert{

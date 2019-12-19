@@ -6,8 +6,8 @@
 package consensus
 
 import (
-	//"crypto/ecdsa"
-
+	"bytes"
+	sha256 "crypto/sha256"
 	"fmt"
 	"time"
 
@@ -18,7 +18,7 @@ import (
 	"github.com/dfinlab/meter/block"
 	"github.com/dfinlab/meter/comm"
 	bls "github.com/dfinlab/meter/crypto/multi_sig"
-	cmn "github.com/dfinlab/meter/libs/common"
+	//	cmn "github.com/dfinlab/meter/libs/common"
 	"github.com/dfinlab/meter/logdb"
 	"github.com/dfinlab/meter/meter"
 	"github.com/dfinlab/meter/packer"
@@ -111,18 +111,20 @@ func (c *ConsensusReactor) NewRuntimeForReplay(header *block.Header) (*runtime.R
 		return nil, err
 	}
 
-	//TBD: hotstuff, current block's evidence is not available yet. comment out
-	// we can validate this evidence with block parent.
-	/******
+	// we can validate this QC with block parent.
 	blk, err := c.chain.GetBlock(header.ID())
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c.validateEvidence(blk.GetBlockEvidence(), blk); err != nil {
+	if err := c.validateQCMatchBlock(blk.GetQC(), parentHeader); err != nil {
 		return nil, err
 	}
-	****/
+
+	if err := c.validateQC(blk); err != nil {
+		return nil, err
+	}
+
 	return runtime.New(
 		c.chain.NewSeeker(header.ParentID()),
 		state,
@@ -148,12 +150,14 @@ func (c *ConsensusReactor) validate(
 		return nil, nil, err
 	}
 
-	//same above reason.
-	/****
-	if err := c.validateEvidence(block.GetBlockEvidence(), block); err != nil {
+	if err := c.validateQCMatchBlock(block.GetQC(), parentHeader); err != nil {
 		return nil, nil, err
 	}
-	****/
+
+	if err := c.validateQC(block); err != nil {
+		return nil, nil, err
+	}
+
 	if err := c.validateProposer(header, parentHeader, state); err != nil {
 		return nil, nil, err
 	}
@@ -194,17 +198,77 @@ func (c *ConsensusReactor) validateBlockHeader(header *block.Header, parent *blo
 	return nil
 }
 
-func (c *ConsensusReactor) validateEvidence(ev *block.Evidence, blk *block.Block) error {
+// does qc match the parent block?
+func (c *ConsensusReactor) validateQCMatchBlock(qc *block.QuorumCert, header *block.Header) error {
+	var txsRoot, stateRoot, msgHash meter.Bytes32
+	var blkType uint32
+
+	// SkipSignatureCheck flag: skip check match block
+	if c.config.SkipSignatureCheck {
+		return nil
+	}
+
+	blkHeight := header.Number()
+	// height mismatch
+	if qc.QCHeight != uint64(blkHeight) {
+		return errors.New("height mismatch")
+	}
+	// genesis does not have qc
+	if qc.QCHeight == 0 {
+		return nil
+	}
+
+	blkType = header.BlockType()
+	txsRoot = header.TxsRoot()
+	stateRoot = header.StateRoot()
+	fmt.Println(fmt.Sprintf("height: %d, txsRoot: %s, stateRoot: %s, BlockType: %d", blkHeight, txsRoot.String(), stateRoot.String(), blkType))
+	signMsg := c.BuildProposalBlockSignMsg(blkType, uint64(blkHeight), &txsRoot, &stateRoot)
+	//p.logger.Info("in BlockMatchQC", "signMsg", signMsg)
+	//msgHash = c.csCommon.Hash256Msg([]byte(signMsg), uint32(MSG_SIGN_OFFSET_DEFAULT), uint32(MSG_SIGN_LENGTH_DEFAULT))
+	msgHash = sha256.Sum256([]byte(signMsg[MSG_SIGN_OFFSET_DEFAULT : MSG_SIGN_OFFSET_DEFAULT+MSG_SIGN_LENGTH_DEFAULT]))
+	//p.logger.Info("in BlockMatchQC Compare", "msgHash", msgHash, "qc voting Msg hash", qc.VoterMsgHash[0])
+	//qc at least has 1 vote signature and they are the same, so compare [0] is good enough
+	if bytes.Compare(msgHash.Bytes(), meter.Bytes32(qc.VoterMsgHash[0]).Bytes()) == 0 {
+		c.logger.Debug("QC matches block", "msgHash", msgHash.String(), "qc voting Msg hash", meter.Bytes32(qc.VoterMsgHash[0]).String())
+		return nil
+	} else {
+		c.logger.Info("QC doesn't matches block", "msgHash", msgHash.String(), "qc voting Msg hash", meter.Bytes32(qc.VoterMsgHash[0]).String())
+		return errors.New("message hash mismatch")
+	}
+}
+
+// input qc comes along with block, validate qc's signature
+// there are 2 cases:
+// 1. in committee, proposal message validate QC
+// 2. receive block from p2p and validate QC
+//  0      | 1  2        |            |
+// Genesis | M  M ...   K|M M ... M K |M ...
+func (c *ConsensusReactor) validateQC(blk *block.Block) error {
 	// skip the validation if the 'skip-signature-check' flag is configured
 	if c.config.SkipSignatureCheck {
 		return nil
 	}
 
+	qc := blk.GetQC()
 	header := blk.Header()
+	best := c.chain.BestBlock()
 
 	// find out the block which has the committee info
 	// Normally we store the committee info in the first of Mblock after Kblock
 	lastKBlock := header.LastKBlockHeight()
+	if best.Header().Number() < lastKBlock {
+		c.logger.Error("too far ...", "block height", header.Number(), "best height", best.Header().Number())
+		return consensusError(fmt.Sprintf("can not validate, too far: height=%v", header.Number()))
+	} else if best.Header().Number() > lastKBlock {
+		if best.Header().Number() == (lastKBlock + 1) {
+			// The first Mblock of each Epoch
+
+		} else {
+
+		}
+	} else if best.Header().Number() == lastKBlock {
+	}
+
 	var b *block.Block
 	if (lastKBlock + 1) == header.Number() {
 		b = blk
@@ -243,14 +307,14 @@ func (c *ConsensusReactor) validateEvidence(ev *block.Evidence, blk *block.Block
 	}
 
 	//validate voting signature
-	voteSig, err := system.SigFromBytes(ev.VotingSig)
+	voteSig, err := system.SigFromBytes(qc.VoterAggSig)
 	if err != nil {
 		c.logger.Error("Sig from bytes error")
 		c.FreeCSSystem(system, params, pairing)
 		return consensusError(fmt.Sprintf("voting signature from bytes failed: %v", err))
 	}
 
-	voteBA := ev.VotingBitArray
+	voteBA := qc.VoterBitArray()
 	voteCSPubKeys := []bls.PublicKey{}
 	for _, cm := range cms {
 		if voteBA.GetIndex(cm.CSIndex) == true {
@@ -258,15 +322,13 @@ func (c *ConsensusReactor) validateEvidence(ev *block.Evidence, blk *block.Block
 		}
 	}
 
-	/*****
-	fmt.Println("VoterMsgHash", cmn.ByteSliceToByte32(ev.VotingMsgHash))
+	fmt.Println("VoterMsgHash", qc.VoterMsgHash)
 	for _, p := range voteCSPubKeys {
 		fmt.Println("pubkey:::", system.PubKeyToBytes(p))
 	}
 	fmt.Println("aggrsig", system.SigToBytes(voteSig), "system", system.ToBytes())
-	*****/
 
-	voteValid, err := bls.AggregateVerify(voteSig, cmn.ByteSliceToByte32(ev.VotingMsgHash), voteCSPubKeys)
+	voteValid, err := bls.AggregateVerify(voteSig, qc.VoterMsgHash, voteCSPubKeys)
 	if (err != nil) || (voteValid != true) {
 		c.logger.Error("voting signature validate error")
 		c.FreeCSSystem(system, params, pairing)
@@ -274,13 +336,14 @@ func (c *ConsensusReactor) validateEvidence(ev *block.Evidence, blk *block.Block
 	}
 
 	//validate notarize signature
+	/***********
 	notarizeSig, err := system.SigFromBytes(ev.NotarizeSig)
 	if err != nil {
 		c.logger.Error("Notarize Sig from bytes error")
 		c.FreeCSSystem(system, params, pairing)
 		return consensusError(fmt.Sprintf("notarize signature from bytes failed: %v", err))
 	}
-	notarizeBA := ev.NotarizeBitArray
+	notarizeBA := qc.NotarizeBitArray
 	notarizeCSPubKeys := []bls.PublicKey{}
 
 	for _, cm := range cms {
@@ -294,7 +357,7 @@ func (c *ConsensusReactor) validateEvidence(ev *block.Evidence, blk *block.Block
 		c.FreeCSSystem(system, params, pairing)
 		return consensusError(fmt.Sprintf("notarize signature validate error"))
 	}
-
+	**********/
 	c.FreeCSSystem(system, params, pairing)
 	return nil
 }
@@ -455,6 +518,7 @@ func (c *ConsensusReactor) verifyBlock(blk *block.Block, state *state.State) (*s
 //---------------block store new wrappers routines ----------
 
 //
+/********************
 func (conR *ConsensusReactor) finalizeMBlock(blk *block.Block, ev *block.Evidence) bool {
 
 	var committeeInfo []block.CommitteeInfo
@@ -587,6 +651,7 @@ Block commited at height %d
 
 	return true
 }
+**************/
 
 //build block committee info part
 func (conR *ConsensusReactor) BuildCommitteeInfoFromMember(system bls.System, cms []CommitteeMember) []block.CommitteeInfo {

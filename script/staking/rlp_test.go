@@ -129,7 +129,7 @@ func TestRlpForBucket(t *testing.T) {
 const (
 	//HOLDER_ADDRESS    = "0x0205c2D862cA051010698b69b54278cbAf945C0b"
 	HOLDER_ADDRESS    = "0x0205c2D862cA051010698b69b54278cbAf945C0b"
-	CANDIDATE_ADDRESS = "0x8a88c59bf15451f9deb1d62f7734fece2002668e"
+	CANDIDATE_ADDRESS = "0x0205c2D862cA051010698b69b54278cbAf945C0b"
 	CANDIDATE_AMOUNT  = "2000000000000000000000" //(2e20) 200MTRG
 )
 
@@ -137,10 +137,10 @@ func generateScriptData(opCode uint32, holderAddrStr, candAddrStr string, amount
 	holderAddr, _ := meter.ParseAddress(holderAddrStr)
 	candAddr, _ := meter.ParseAddress(candAddrStr)
 	version := uint32(0)
-	candName := []byte("tester")
-	candPubKey := []byte("")
-	candIP := []byte("1.2.3.4")
-	candPort := uint16(8669)
+	candName := []byte("DelegateSample52")
+	candPubKey := []byte("BK/EDYkLUS86ONmNsKlSj7UXDGIJXef3rQa/F2fEO/hx55i7sZhScEcuY9BN82ANTWJij+NgwJknE2em9Tf4N5s=")
+	candIP := []byte("192.168.1.52")
+	candPort := uint16(8080)
 	stakingID := meter.MustParseBytes32(bucketIDString)
 	option := uint32(2)
 
@@ -212,7 +212,7 @@ func TestScriptDataForUnbound(t *testing.T) {
 }
 
 func TestScriptDataForCandidate(t *testing.T) {
-	hexData, err := generateScriptData(staking.OP_CANDIDATE, HOLDER_ADDRESS, CANDIDATE_ADDRESS, 2e18)
+	hexData, err := generateScriptData(staking.OP_CANDIDATE, HOLDER_ADDRESS, CANDIDATE_ADDRESS, 4e18)
 	if err != nil {
 		t.Fail()
 	}

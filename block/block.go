@@ -92,6 +92,7 @@ type Body struct {
 	Txs tx.Transactions
 }
 
+/**********
 // Create new Evidence
 func NewEvidence(votingSig []byte, votingMsgHash [][32]byte, votingBA cmn.BitArray,
 	notarizeSig []byte, notarizeMsgHash [][32]byte, notarizeBA cmn.BitArray) *Evidence {
@@ -104,6 +105,7 @@ func NewEvidence(votingSig []byte, votingMsgHash [][32]byte, votingBA cmn.BitArr
 		NotarizeBitArray: notarizeBA,
 	}
 }
+***********/
 
 // Create new committee Info
 func NewCommitteeInfo(pubKey []byte, power uint64, netAddr types.NetAddress, csPubKey []byte, csIndex uint32) *CommitteeInfo {
@@ -246,6 +248,7 @@ func (b *Block) GetQC() *QuorumCert {
 	return b.QC
 }
 
+/***********
 func (b *Block) SetBlockEvidence(ev *Evidence) *Block {
 	// FIXME: set QCHeight and QCRound, set voting msg hash, and votingSig
 	// b.QC = QuorumCert{VotingBitArray: ev.VotingBitArray, VotingMsgHash: make([][32]byte, 0)}
@@ -257,6 +260,7 @@ func (b *Block) GetBlockEvidence() *Evidence {
 	// return &Evidence{VotingBitArray: b.QC.VotingBitArray, VotingMsgHash: make([]byte, 0)}
 	return nil
 }
+***********/
 
 // Serialization for KBlockData and ComitteeInfo
 func (b *Block) GetKBlockData() (*KBlockData, error) {

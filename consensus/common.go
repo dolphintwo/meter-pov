@@ -2,11 +2,9 @@ package consensus
 
 import (
 	"bytes"
-	//    "errors"
-	"fmt"
-	//"time"
 	sha256 "crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
