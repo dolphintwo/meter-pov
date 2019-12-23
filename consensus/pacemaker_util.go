@@ -16,6 +16,7 @@ import (
 	"github.com/dfinlab/meter/block"
 	bls "github.com/dfinlab/meter/crypto/multi_sig"
 	"github.com/dfinlab/meter/types"
+	"github.com/dfinlab/meter/meter"
 )
 
 const (
@@ -434,5 +435,82 @@ func (p *Pacemaker) checkPendingMessages(curHeight uint64) error {
 	if (height > lowest) && (height-lowest) >= 3*MSG_KEEP_HEIGHT {
 		p.pendingList.CleanUpTo(height - MSG_KEEP_HEIGHT)
 	}
+	return nil
+}
+
+func (p *Pacemaker)ValidateVote(voteMsg *PMVoteForProposalMessage) error {
+	var blkType uint32
+	var blk *block.Block
+	var txsRoot, stateRoot meter.Bytes32
+	ch := voteMsg.CSMsgCommonHeader
+	/***
+	if !p.checkHeightAndRound(ch) {
+		return errors.New("checkHeightAndRoute failed")
+	}
+	***/
+
+	if p.csReactor.ValidateCMheaderSig(&ch, voteMsg.SigningHash().Bytes()) == false {
+                p.csReactor.logger.Error("Vote Signature validate failed")
+                return errors.New("Signature validate failed")
+        }
+
+	// valid the voter index. we can get the index from the publicKey
+	senderPubKey, err := crypto.UnmarshalPubkey(ch.Sender)
+	if err != nil {
+		fmt.Println("ummarshal public key of sender failed ")
+		return errors.New("ummarshal public key of sender failed ")
+	}
+	index := p.csReactor.GetCommitteeMemberIndex(*senderPubKey)
+	if (int64(index)) != voteMsg.VoterIndex {
+		p.csReactor.logger.Error("Voter index mismatch", "expected", index, "actual", voteMsg.VoterIndex)
+		return errors.New("Voter index mismatch")
+	}
+
+	// 1. validate voter signature
+	pmBlock := p.AddressBlock(uint64(ch.Height), uint64(ch.Round))
+	if  pmBlock == nil {
+		return errors.New("Cannot find pmBlock for vote proposal")
+	}
+	if pmBlock.ProposedBlockInfo == nil {
+		blk, err := block.BlockDecodeFromBytes(pmBlock.ProposedBlock)
+		if err != nil {
+			return errors.New("Can not decode vote block")
+		}
+		blkType = blk.Header().BlockType()
+        } else {
+		blk = pmBlock.ProposedBlockInfo.ProposedBlock
+		blkType = uint32(pmBlock.ProposedBlockType)
+	}
+
+	txsRoot = blk.Header().TxsRoot()
+	stateRoot = blk.Header().StateRoot()
+
+	signMsg := p.csReactor.BuildProposalBlockSignMsg(blkType, pmBlock.Height, &txsRoot, &stateRoot)
+	p.csReactor.logger.Debug("Sign message", "msg", signMsg)
+
+	// validate the message hash
+	msgHash := p.csReactor.csCommon.Hash256Msg([]byte(signMsg), uint32(MSG_SIGN_OFFSET_DEFAULT), uint32(MSG_SIGN_LENGTH_DEFAULT))
+	if msgHash != voteMsg.SignedMessageHash {
+		p.csReactor.logger.Error("msgHash mismatch ...")
+		return errors.New("msgHash mismatch")
+	}
+	// validate the signature
+	sig, err := p.csReactor.csCommon.system.SigFromBytes(voteMsg.VoterSignature)
+	if err != nil {
+		p.csReactor.logger.Error("get signature failed ...")
+		return errors.New("get signature failed")
+	}
+
+	pubKey, err := p.csReactor.csCommon.system.PubKeyFromBytes(voteMsg.CSVoterPubKey)
+	if err != nil {
+		p.csReactor.logger.Error("get PubKey failed ...")
+		return errors.New("get PubKey failed ")
+	}
+	valid := bls.Verify(sig, msgHash, pubKey)
+	if valid == false {
+		p.csReactor.logger.Error("validate voter signature failed")
+		return errors.New("validate voter signature failed")
+	}
+	fmt.Println("ValidateVote ok")
 	return nil
 }

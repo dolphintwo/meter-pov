@@ -403,6 +403,12 @@ func (p *Pacemaker) OnReceiveVote(voteMsg *PMVoteForProposalMessage) error {
 	if err != nil {
 		return err
 	}
+
+	err = p.ValidateVote(voteMsg)
+	if err != nil {
+		return err
+	}
+
 	voteCount := len(p.voteSigs)
 	if MajorityTwoThird(voteCount, p.csReactor.committeeSize) == false {
 		// if voteCount < p.csReactor.committeeSize {
