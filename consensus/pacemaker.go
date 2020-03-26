@@ -639,6 +639,10 @@ func (p *Pacemaker) OnReceiveNewView(newViewMsg *PMNewViewMessage, from types.Ne
 				if proposal, ok = p.proposalMap[tmpHeight]; ok != true {
 					break
 				}
+				// if I haven't got the proposal message, stop right away
+				if proposal == nil || proposal.ProposalMessage == nil {
+					break
+				}
 				p.logger.Info("peer missed one proposal, forward to it ... ", "height", tmpHeight, "name", name, "ip", from.IP.String())
 				p.SendMessageToPeers(proposal.ProposalMessage, peers)
 				tmpHeight++

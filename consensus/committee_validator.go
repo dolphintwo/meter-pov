@@ -157,6 +157,12 @@ func (cv *ConsensusValidator) ProcessAnnounceCommittee(announceMsg *AnnounceComm
 		return false
 	}
 
+	myID := crypto.FromECDSAPub(&cv.csReactor.myPubKey)
+	if bytes.Equal(myID, announceMsg.AnnouncerID) == true {
+		cv.csReactor.logger.Info("I am the announcer, ignore this announce")
+		return true
+	}
+
 	//get the nonce
 	kblock, err := cv.csReactor.chain.GetTrunkBlock(uint32(announceMsg.KBlockHeight))
 	var kblockNonce uint64
