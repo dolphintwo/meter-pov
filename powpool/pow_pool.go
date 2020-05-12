@@ -27,9 +27,19 @@ import (
 const (
 	// minimum height for committee relay
 	POW_MINIMUM_HEIGHT_INTV = uint32(4)
-	//This ceof is based s9 ant miner, 1.323Kw 13.5T hashrate coef 11691855416.9
-	//python -c "print 2**32 * 1.323 /120/13.5/1000/1000/1000/1000/10/30"
-	POW_DEFAULT_REWARD_COEF = int64(11691855417)
+
+    //This ceof is based s9 ant miner, 1.323Kw 13.5T hashrate coef 11691855416.9 unit 1e18
+    //python -c "print 2**32 * 1.323 /120/13.5/1000/1000/1000/1000/10/30 * 1e18"
+    POW_DEFAULT_REWARD_COEF_S9 = int64(11691855417)
+    //efficiency w/hash  python -c "print 1.323/13.5" = 0.098
+    POW_S9_EFFECIENCY = 0.098
+    //M10 spec 1500W, 25TH
+    //python -c "print 2**32 * 1.5 /120/25/1000/1000/1000/1000/10/30 * 1e18"
+    POW_DEFAULT_REWARD_COEF_M10 = int64(7158278826)
+    POW_M10_EFFECIENCY          = 0.060
+
+    //// M10 is used since bitcoin is halved on 5/12/2020
+	POW_DEFAULT_REWARD_COEF = POW_DEFAULT_REWARD_COEF_M10
 )
 
 var (
