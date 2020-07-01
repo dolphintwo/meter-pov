@@ -107,6 +107,7 @@ type JSONEpoch struct {
 }
 
 func buildJSONEpoch(blk *block.Block) *JSONEpoch {
+	// fmt.Println("build epoch with :", blk.String())
 	txs := blk.Transactions()
 	powRaws := blk.KBlockData.Data
 	clauses := make([]*tx.Clause, 0)
@@ -115,6 +116,7 @@ func buildJSONEpoch(blk *block.Block) *JSONEpoch {
 			clauses = append(clauses, c)
 		}
 	}
+	// fmt.Println("clauses ---------")
 
 	if len(clauses) < len(powRaws) {
 		return nil
@@ -127,6 +129,7 @@ func buildJSONEpoch(blk *block.Block) *JSONEpoch {
 		err := powBlock.Deserialize(bytes.NewReader(powRaw))
 		if err != nil {
 			fmt.Println("could not deserialize msgBlock, error:", err)
+			continue
 		}
 		jPowBlk := &JSONPowBlock{
 			Hash:      powBlock.Header.BlockHash().String(),
@@ -138,7 +141,7 @@ func buildJSONEpoch(blk *block.Block) *JSONEpoch {
 
 	return &JSONEpoch{
 		Nonce:     blk.KBlockData.Nonce,
-		EpochID:   blk.CommitteeInfos.Epoch,
+		EpochID:   blk.QC.EpochID,
 		PowBlocks: jPowBlks,
 	}
 }

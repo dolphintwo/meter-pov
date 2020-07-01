@@ -136,7 +136,7 @@ func (b *Blocks) getKBlockByEpoch(epoch uint64) (*block.Block, error) {
 		return nil, errors.New("requested epoch is too new")
 	}
 
-	//fmt.Println("getKBlockByEpoch", "epoch", epoch, "curEpoch", curEpoch)
+	// fmt.Println("getKBlockByEpoch", "epoch", epoch, "curEpoch", curEpoch)
 	delta := uint64(best.Header().Number()) / curEpoch
 
 	var blk *block.Block
@@ -150,12 +150,12 @@ func (b *Blocks) getKBlockByEpoch(epoch uint64) (*block.Block, error) {
 		ht := delta * (epoch + 4)
 		blk, err = b.chain.GetTrunkBlock(uint32(ht))
 		if err != nil {
-			fmt.Println("get the kblock failed", "epoch", epoch, "error", err)
+			// fmt.Println("get the kblock failed", "epoch", epoch, "error", err)
 			return nil, err
 		}
 
 		ep = blk.GetBlockEpoch()
-		for ep < epoch {
+		for ep < epoch+1 {
 			ht = ht + (4 * delta)
 			if ht >= uint64(best.Header().Number()) {
 				ht = uint64(best.Header().Number())
@@ -166,11 +166,11 @@ func (b *Blocks) getKBlockByEpoch(epoch uint64) (*block.Block, error) {
 
 			blk, err = b.chain.GetTrunkBlock(uint32(ht) + uint32(5*delta))
 			if err != nil {
-				fmt.Println("get the kblock failed", "epoch", epoch, "error", err)
+				fmt.Println("get the block failed", "epoch", epoch, "error", err)
 				return nil, err
 			}
 			ep = blk.GetBlockEpoch()
-			//fmt.Println("... height:", blk.Header().Number(), "epoch", ep)
+			// fmt.Println("... height:", blk.Header().Number(), "epoch", ep)
 		}
 	}
 
@@ -183,10 +183,10 @@ func (b *Blocks) getKBlockByEpoch(epoch uint64) (*block.Block, error) {
 			return nil, err
 		}
 		ep = blk.GetBlockEpoch()
-		//fmt.Println("...searching height:", blk.Header().Number(), "epoch", ep)
+		// fmt.Println("...searching height:", blk.Header().Number(), "epoch", ep)
 	}
 
-	//fmt.Println("get the kblock", "height:", blk.Header().Number(), "epoch", ep)
+	// fmt.Println("get the kblock", "height:", blk.Header().Number(), "epoch", ep)
 	if ep == epoch {
 		return blk, nil
 	}
@@ -213,7 +213,7 @@ func (b *Blocks) getKBlockByEpoch(epoch uint64) (*block.Block, error) {
 		if count >= 2000 {
 			return nil, errors.New("can not find the kblock")
 		}
-		//fmt.Println("...final search. height:", ht, "epoch", ep)
+		// fmt.Println("...final search. height:", ht, "epoch", ep)
 	}
 }
 
