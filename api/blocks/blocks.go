@@ -103,6 +103,17 @@ func (b *Blocks) parseRevision(revision string) (interface{}, error) {
 	return uint32(n), err
 }
 
+func (b *Blocks) parseEpoch(epoch string) (uint32, error) {
+	n, err := strconv.ParseUint(epoch, 0, 0)
+	if err != nil {
+		return 0, err
+	}
+	if n > math.MaxUint32 {
+		return 0, errors.New("block number out of max uint32")
+	}
+	return uint32(n), err
+}
+
 func (b *Blocks) getBlock(revision interface{}) (*block.Block, error) {
 	switch revision.(type) {
 	case meter.Bytes32:
@@ -147,9 +158,32 @@ func (b *Blocks) handleGetQC(w http.ResponseWriter, req *http.Request) error {
 	}
 	return utils.WriteJSON(w, qc)
 }
+
+func (b *Blocks) handleGetEpochPowInfo(w http.ResponseWriter, req *http.Request) error {
+	epoch, err := b.parseEpoch(mux.Vars(req)["epoch"])
+	if err != nil {
+		return utils.BadRequest(errors.WithMessage(err, "epoch"))
+	}
+
+	block, err := b.getKBlockByEpoch(uint64(epoch))
+	if err != nil {
+		if b.chain.IsNotFound(err) {
+			return utils.WriteJSON(w, nil)
+		}
+		return utils.BadRequest(errors.WithMessage(err, "can't locate kblock within epoch"))
+	}
+
+	jEpoch := buildJSONEpoch(block)
+	if jEpoch == nil {
+		return utils.BadRequest(errors.WithMessage(errors.New("json marshal"), "can't marshal json object for epoch"))
+	}
+
+	return utils.WriteJSON(w, jEpoch)
+}
+
 func (b *Blocks) Mount(root *mux.Router, pathPrefix string) {
 	sub := root.PathPrefix(pathPrefix).Subrouter()
 	sub.Path("/qc/{revision}").Methods("Get").HandlerFunc(utils.WrapHandlerFunc(b.handleGetQC))
 	sub.Path("/{revision}").Methods("GET").HandlerFunc(utils.WrapHandlerFunc(b.handleGetBlock))
-
+	sub.Path("/epoch/{epoch}").Methods("Get").HandlerFunc(utils.WrapHandlerFunc(b.handleGetEpochPowInfo))
 }
