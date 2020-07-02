@@ -58,6 +58,8 @@ type Pacemaker struct {
 	msgCache      *MsgCache
 	sigAggregator *SignatureAggregator
 	pendingList   *PendingList
+	startHeight   uint32
+	startRound    uint32
 
 	// HotStuff fields
 	lastVotingHeight uint32
