@@ -98,7 +98,7 @@ type JSONEmbeddedTx struct {
 type JSONPowBlock struct {
 	Hash        string `json:"hash"`
 	PrevBlock   string `json:"prevBlock"`
-	Beneficiary string `json:"beneficiary`
+	Beneficiary string `json:"beneficiary"`
 	Height      uint32 `json:"height"`
 	Reward      string `json:"reward"`
 }
