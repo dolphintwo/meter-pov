@@ -222,7 +222,13 @@ func (p *PowPool) Add(newPowBlockInfo *PowBlockInfo) error {
 
 	// if parent is not genesis and it's not contained in powpool
 	// fetch the block immediately in a coroutine
+<<<<<<< HEAD
 	if powObj.Height() > 1 && !p.all.Contains(powObj.blockInfo.HashPrevBlock) {
+=======
+	// Here err is set ONLY kframe is not added (not in committee).
+	// XXX: a fat chance --- the powObj is already in chain, the parent block fetch is still sent.
+	if err == nil && p.all.lastKframePowObj != nil && powObj.Height() >= p.all.lastKframePowObj.Height() && !p.all.Contains(powObj.blockInfo.HashPrevBlock) {
+>>>>>>> b4ed9737... remove initialAddKframe when not in committee; reject to import missing parent block when current block < lastKframeHeight
 		go p.FetchPowBlock(powObj.Height() - uint32(1))
 	}
 
