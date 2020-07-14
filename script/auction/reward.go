@@ -15,19 +15,11 @@ import (
 )
 
 const (
-<<<<<<< HEAD
-    totoalRelease = 400000000 //total released 400M MTRG
-    totalYears    = 500       // 500 years
-    fadeYears     = 15        // halve every 15 years
-    fadeRate      = 0.8       // fade rate 0.8
-    N             = 24        // history buffer size
-=======
-	totoalRelease = 160000000 //total released 160M MTRG
+	totoalRelease = 400000000 //total released 400M MTRG
 	totalYears    = 500       // 500 years
-	fadeYears     = 6         // halve every 6 years
+	fadeYears     = 15        // halve every 15 years
 	fadeRate      = 0.8       // fade rate 0.8
 	N             = 24        // history buffer size
->>>>>>> 642820c2... update license
 )
 
 /***************
@@ -81,83 +73,19 @@ func getHistoryPrices() *[N]float64 {
 }
 
 func calcWeightedAvgPrice(history *[N]float64) float64 {
-<<<<<<< HEAD
-    var i int
-    var denominator float64 = float64((N + 1) * N / 2)
-    var WeightedAvgPrice float64
-
-    for i = 0; i < N; i++ {
-        price := history[i] * float64(i) / denominator
-        WeightedAvgPrice = WeightedAvgPrice + price
-    }
-    return WeightedAvgPrice
-}
-
-// released MTRG for a speciefic range
-func CalcRewardEpochRange(startEpoch, endEpoch uint64) (totalReward float64, epochRewards []float64, err error) {
-    var epoch uint64
-    var epochReward float64
-    var InitialRelease float64
-    var ReservePrice float64
-
-    rp := new(big.Int).Div(GetAuctionReservedPrice(), big.NewInt(1e6))
-    ReservePrice = float64(rp.Int64()) / 1e12
-
-    InitialRelease = GetAuctionInitialRelease() // initial is 1000 mtrg
-    InitReleasePerEpoch := float64(InitialRelease / 24)
-
-    epochRewards = make([]float64, 0)
-    Halving := fadeYears * 365 * 24
-    err = nil
-
-    history := getHistoryPrices()
-    weightedAvgPrice := calcWeightedAvgPrice(history)
-
-    for epoch = startEpoch; epoch <= endEpoch; epoch++ {
-        ReleaseLimit := InitReleasePerEpoch + InitReleasePerEpoch*(weightedAvgPrice-ReservePrice)/ReservePrice
-
-        reward := float64(totoalRelease) / float64(Halving)
-        reward = reward * math.Log(1/fadeRate) * math.Pow(fadeRate, (float64(epoch)/float64(Halving)))
-        if reward > ReleaseLimit {
-            epochReward = ReleaseLimit
-        } else {
-            epochReward = reward
-        }
-
-        totalReward = totalReward + epochReward
-        epochRewards = append(epochRewards, epochReward)
-    }
-    log.Info("meter gov released", "amount", totalReward, "startEpoch", startEpoch, "endEpoch", endEpoch)
-    fmt.Println("each epoch reward", epochRewards)
-    return
-}
-
-func FloatToBigInt(val float64) *big.Int {
-    bigval := new(big.Float)
-    bigval.SetFloat64(val)
-
-    coin := new(big.Float)
-    coin.SetInt(big.NewInt(1000000000000000000))
-    bigval.Mul(bigval, coin)
-
-    result := new(big.Int)
-    result, accuracy := bigval.Int(result)
-    log.Debug("big int", "value", result, "accuracy", accuracy)
-    return result
-=======
 	var i int
 	var denominator float64 = float64((N + 1) * N / 2)
 	var WeightedAvgPrice float64
 
-	for i = 1; i <= N; i++ {
-		price := history[i-1] * float64(i) / denominator
+	for i = 0; i < N; i++ {
+		price := history[i] * float64(i) / denominator
 		WeightedAvgPrice = WeightedAvgPrice + price
 	}
 	return WeightedAvgPrice
 }
 
 // released MTRG for a speciefic range
-func CalcRewardEpochRange(startEpoch, endEpoch uint64) (totalReward float64, totalUnrelease float64, epochRewards []float64, err error) {
+func CalcRewardEpochRange(startEpoch, endEpoch uint64) (totalReward float64, epochRewards []float64, err error) {
 	var epoch uint64
 	var epochReward float64
 	var InitialRelease float64
@@ -176,35 +104,37 @@ func CalcRewardEpochRange(startEpoch, endEpoch uint64) (totalReward float64, tot
 	history := getHistoryPrices()
 	weightedAvgPrice := calcWeightedAvgPrice(history)
 
-	totalReserve := float64(0)
 	for epoch = startEpoch; epoch <= endEpoch; epoch++ {
 		ReleaseLimit := InitReleasePerEpoch + InitReleasePerEpoch*(weightedAvgPrice-ReservePrice)/ReservePrice
 
 		reward := float64(totoalRelease) / float64(Halving)
 		reward = reward * math.Log(1/fadeRate) * math.Pow(fadeRate, (float64(epoch)/float64(Halving)))
-		reserve := float64(0)
 		if reward > ReleaseLimit {
 			epochReward = ReleaseLimit
-			reserve = reward - ReleaseLimit
 		} else {
 			epochReward = reward
 		}
 
 		totalReward = totalReward + epochReward
 		epochRewards = append(epochRewards, epochReward)
-		totalReserve = totalReserve + reserve
 	}
-
-	log.Info("meter gov released", "amount", totalReward, "reserve", totalReserve, "startEpoch", startEpoch, "endEpoch", endEpoch)
-	//fmt.Println("each epoch reward", epochRewards)
+	log.Info("meter gov released", "amount", totalReward, "startEpoch", startEpoch, "endEpoch", endEpoch)
+	fmt.Println("each epoch reward", epochRewards)
 	return
 }
 
 func FloatToBigInt(val float64) *big.Int {
-	fval := float64(val * 1e09)
-	bigval := big.NewInt(int64(fval))
-	return bigval.Mul(bigval, big.NewInt(1e09))
->>>>>>> 642820c2... update license
+	bigval := new(big.Float)
+	bigval.SetFloat64(val)
+
+	coin := new(big.Float)
+	coin.SetInt(big.NewInt(1000000000000000000))
+	bigval.Mul(bigval, coin)
+
+	result := new(big.Int)
+	result, accuracy := bigval.Int(result)
+	log.Debug("big int", "value", result, "accuracy", accuracy)
+	return result
 }
 
 func GetAuctionReservedPrice() *big.Int {
