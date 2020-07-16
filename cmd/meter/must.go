@@ -154,8 +154,12 @@ func loadDelegates(ctx *cli.Context, blsCommon *consensus.BlsCommon) []*types.De
 
 func splitPubKey(comboPub string, blsCommon *consensus.BlsCommon) (*ecdsa.PublicKey, *bls.PublicKey) {
 	// first part is ecdsa public, 2nd part is bls public key
+	fmt.Println("COMBO PUB: ", comboPub)
 	trimmed := strings.TrimSuffix(comboPub, "\n")
+	fmt.Println("TRIMMED: ", comboPub)
 	split := strings.Split(trimmed, ":::")
+	fmt.Println("SPLIT: ", split[0], split[1])
+
 	// fmt.Println("ecdsa PubKey", split[0], "Bls PubKey", split[1])
 	pubKeyBytes, err := b64.StdEncoding.DecodeString(split[0])
 	if err != nil {
