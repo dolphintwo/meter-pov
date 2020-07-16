@@ -1530,11 +1530,8 @@ func (conR *ConsensusReactor) convertFromIntern(interns []*types.DelegateIntern)
 
 func (conR *ConsensusReactor) splitPubKey(comboPub string) (*ecdsa.PublicKey, *bls.PublicKey) {
 	// first part is ecdsa public, 2nd part is bls public key
-	fmt.Println("COMBO PUB: ", comboPub)
-	trimmed := strings.TrimSuffix(comboPub, "\n")
-	fmt.Println("TRIMMED: ", trimmed)
+	trimmed := strings.TrimSuffix(strings.TrimSuffix(comboPub, "\n"), "\\n")
 	split := strings.Split(trimmed, ":::")
-	fmt.Println("SPLIT: ", split[0], split[1])
 	// fmt.Println("ecdsa PubKey", split[0], "Bls PubKey", split[1])
 	pubKeyBytes, err := b64.StdEncoding.DecodeString(split[0])
 	if err != nil {
