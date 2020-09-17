@@ -152,7 +152,9 @@ func (t *Transactions) handleSendEthRawTransaction(w http.ResponseWriter, req *h
 		if err != nil {
 			fmt.Println("raw tx ERR: ", err)
 		}
-		nativeTx, err := tx.NewTransactionFromEthTx(&ethTx, byte(88), 0)
+		bestBlock := t.chain.BestBlock()
+		shoalChainTag := byte(88)
+		nativeTx, err := tx.NewTransactionFromEthTx(&ethTx, shoalChainTag, uint64(bestBlock.BlockHeader.Number()))
 		if err != nil {
 			return utils.BadRequest(err)
 		} else {
