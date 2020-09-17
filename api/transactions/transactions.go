@@ -154,7 +154,7 @@ func (t *Transactions) handleSendEthRawTransaction(w http.ResponseWriter, req *h
 		}
 		bestBlock := t.chain.BestBlock()
 		shoalChainTag := byte(88)
-		nativeTx, err := tx.NewTransactionFromEthTx(&ethTx, shoalChainTag, uint64(bestBlock.BlockHeader.Number()))
+		nativeTx, err := tx.NewTransactionFromEthTx(&ethTx, shoalChainTag, bestBlock.BlockHeader.ID())
 		if err != nil {
 			return utils.BadRequest(err)
 		} else {
@@ -162,6 +162,18 @@ func (t *Transactions) handleSendEthRawTransaction(w http.ResponseWriter, req *h
 		}
 	}
 	return utils.BadRequest(err)
+}
+
+func (t *Transactions) handleTxPool(w http.ResponseWriter, req *http.Request) error {
+	es := t.pool.Executables()
+	var ids []string
+	for _, e := range es {
+		txid := e.ID()
+		ids = append(ids, txid.String())
+	}
+	return utils.WriteJSON(w, map[string][]string{
+		"ids": ids,
+	})
 }
 
 func (t *Transactions) handleSendTransaction(w http.ResponseWriter, req *http.Request) error {
@@ -339,6 +351,7 @@ func (t *Transactions) Mount(root *mux.Router, pathPrefix string) {
 
 	sub.Path("").Methods("POST").HandlerFunc(utils.WrapHandlerFunc(t.handleSendTransaction))
 	sub.Path("/eth").Methods("POST").HandlerFunc(utils.WrapHandlerFunc(t.handleSendEthRawTransaction))
+	sub.Path("/txpool").Methods("GET").HandlerFunc(utils.WrapHandlerFunc(t.handleTxPool))
 	sub.Path("/recent").Methods("GET").HandlerFunc(utils.WrapHandlerFunc(t.handleGetRecentTransactions))
 	sub.Path("/{id}").Methods("GET").HandlerFunc(utils.WrapHandlerFunc(t.handleGetTransactionByID))
 	sub.Path("/{id}/receipt").Methods("GET").HandlerFunc(utils.WrapHandlerFunc(t.handleGetTransactionReceiptByID))

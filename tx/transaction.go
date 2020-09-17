@@ -60,7 +60,7 @@ type body struct {
 	Signature    []byte
 }
 
-func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockRef uint64) (*Transaction, error) {
+func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockID meter.Bytes32) (*Transaction, error) {
 	msg, err := ethTx.AsMessage(types.NewEIP155Signer(ethTx.ChainId()))
 	fmt.Println(err)
 	if err != nil {
@@ -86,12 +86,14 @@ func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockRef u
 	if err != nil {
 		return nil, err
 	}
+	blockRef := NewBlockRefFromID(blockID)
+	blockRefNum := binary.BigEndian.Uint64(blockRef[:])
 	tx := &Transaction{
 		body: body{
 			ChainTag:     chainTag,
-			BlockRef:     blockRef,
-			Expiration:   18,
-			Clauses:      []*Clause{&Clause{body: clauseBody{To: &to, Value: value, Token: 0, Data: []byte("0x")}}},
+			BlockRef:     blockRefNum,
+			Expiration:   32,
+			Clauses:      []*Clause{&Clause{body: clauseBody{To: &to, Value: value, Token: 1, Data: []byte{}}}},
 			GasPriceCoef: 128,
 			Gas:          msg.Gas() + 2000,
 			DependsOn:    nil,
@@ -101,7 +103,7 @@ func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockRef u
 		},
 	}
 	tx.cache.signer.Store(from)
-	fmt.Println(from)
+	fmt.Println("TX: ", tx.String())
 	return tx, nil
 }
 
