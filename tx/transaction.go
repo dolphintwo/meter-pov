@@ -275,11 +275,21 @@ func (t *Transaction) Signer() (signer meter.Address, err error) {
 		}
 	}()
 
-	pub, err := crypto.SigToPub(t.SigningHash().Bytes(), t.body.Signature)
-	if err != nil {
-		return meter.Address{}, err
+	if t.HasReservedFields() {
+		if bytes.Compare(t.body.Reserved[0].([]byte), []byte("01")) == 0 {
+			signer = meter.BytesToAddress(t.Signature())
+			err = nil
+		} else {
+			err = errors.New("invalid tx converted from ethereum tx")
+			signer = meter.Address{}
+		}
+	} else {
+		pub, err := crypto.SigToPub(t.SigningHash().Bytes(), t.body.Signature)
+		if err != nil {
+			return meter.Address{}, err
+		}
+		signer = meter.Address(crypto.PubkeyToAddress(*pub))
 	}
-	signer = meter.Address(crypto.PubkeyToAddress(*pub))
 	return
 }
 

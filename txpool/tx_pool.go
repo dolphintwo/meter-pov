@@ -221,7 +221,7 @@ func (p *TxPool) add(newTx *tx.Transaction, rejectNonexecutable bool) error {
 		}
 		log.Debug("tx added, chain is not synced", "id", newTx.ID(), "pool size", p.all.Len())
 		p.txFeed.Send(&TxEvent{newTx, nil})
-		log.Debug("tx added", "id", newTx.ID())
+		log.Info("tx added", "id", newTx.ID(), "chain", "not synced")
 	}
 	atomic.AddUint32(&p.addedAfterWash, 1)
 	return nil
