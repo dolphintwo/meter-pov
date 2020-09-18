@@ -93,7 +93,7 @@ func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockID me
 			ChainTag:     chainTag,
 			BlockRef:     blockRefNum,
 			Expiration:   32,
-			Clauses:      []*Clause{&Clause{body: clauseBody{To: &to, Value: value, Token: 1, Data: []byte{}}}},
+			Clauses:      []*Clause{&Clause{body: clauseBody{To: &to, Value: value, Token: 0, Data: []byte{}}}},
 			GasPriceCoef: 128,
 			Gas:          msg.Gas() + 2000,
 			DependsOn:    nil,
