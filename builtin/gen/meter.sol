@@ -5,10 +5,16 @@
 
 pragma solidity 0.4.24;
 import "./token.sol";
+import "./imeternative.sol";
 
 /// @title Meter implements VIP180(ERC20) standard, to present Meter/ Meter Gov tokens.
 contract Meter is _Token {
     mapping(address => mapping(address => uint256)) allowed;
+    IMeterNative _meterTracker;
+
+    constructor() public payable {
+       _meterTracker = IMeterNative(0xDc7908F5088852b513DFB0b126B21f7aa6DF9678);
+    }
 
     function name() public pure returns(string) {
         return "Meter";
@@ -23,16 +29,17 @@ contract Meter is _Token {
     }
 
     function totalSupply() public view returns(uint256) {
-        return MeterNative(this).native_mtr_totalSupply();
+        return _meterTracker.native_mtr_totalSupply();
     }
 
     // @return energy that total burned.
     function totalBurned() public view returns(uint256) {
-        return MeterNative(this).native_mtr_totalBurned();
+        return _meterTracker.native_mtr_totalBurned();
     }
 
     function balanceOf(address _owner) public view returns(uint256 balance) {
-        return MeterNative(this).native_mtr_get(_owner);
+        return _meterTracker.native_mtr_get(address (_owner));
+        
     }
 
     function transfer(address _to, uint256 _amount) public returns(bool success) {
@@ -42,7 +49,7 @@ contract Meter is _Token {
 
     /// @notice It's not VIP180(ERC20)'s standard method. It allows master of `_from` or `_from` itself to transfer `_amount` of energy to `_to`.
     function move(address _from, address _to, uint256 _amount) public returns(bool success) {
-        require(_from == msg.sender || MeterNative(this).native_master(_from) == msg.sender, "builtin: self or master required");
+        require(_from == msg.sender || _meterTracker.native_master(_from) == msg.sender, "builtin: self or master required");
         _transfer(_from, _to, _amount);
         return true;
     }
@@ -67,9 +74,9 @@ contract Meter is _Token {
 
     function _transfer(address _from, address _to, uint256 _amount) internal {
         if (_amount > 0) {
-            require(MeterNative(this).native_mtr_sub(_from, _amount), "builtin: insufficient balance");
+            require(_meterTracker.native_mtr_sub(_from, _amount), "builtin: insufficient balance");
             // believed that will never overflow
-            MeterNative(this).native_mtr_add(_to, _amount);
+            _meterTracker.native_mtr_add(_to, _amount);
         }
         emit Transfer(_from, _to, _amount);
     }
@@ -77,6 +84,11 @@ contract Meter is _Token {
 
 contract MeterGov is _Token {
     mapping(address => mapping(address => uint256)) allowed;
+    IMeterNative _meterTracker;
+
+    constructor() public payable {
+       _meterTracker = IMeterNative(0xDc7908F5088852b513DFB0b126B21f7aa6DF9678); 
+    }
 
     function name() public pure returns(string) {
         return "MeterGov";
@@ -91,16 +103,16 @@ contract MeterGov is _Token {
     }
 
     function totalSupply() public view returns(uint256) {
-        return MeterNative(this).native_mtrg_totalSupply();
+        return _meterTracker.native_mtrg_totalSupply();
     }
 
     // @return energy that total burned.
     function totalBurned() public view returns(uint256) {
-        return MeterNative(this).native_mtrg_totalBurned();
+        return _meterTracker.native_mtrg_totalBurned();
     }
 
     function balanceOf(address _owner) public view returns(uint256 balance) {
-        return MeterNative(this).native_mtrg_get(_owner);
+        return _meterTracker.native_mtrg_get(_owner);
     }
 
     function transfer(address _to, uint256 _amount) public returns(bool success) {
@@ -110,7 +122,7 @@ contract MeterGov is _Token {
 
     /// @notice It's not VIP180(ERC20)'s standard method. It allows master of `_from` or `_from` itself to transfer `_amount` of energy to `_to`.
     function move(address _from, address _to, uint256 _amount) public returns(bool success) {
-        require(_from == msg.sender || MeterNative(this).native_master(_from) == msg.sender, "builtin: self or master required");
+        require(_from == msg.sender || _meterTracker.native_master(_from) == msg.sender, "builtin: self or master required");
         _transfer(_from, _to, _amount);
         return true;
     }
@@ -135,28 +147,10 @@ contract MeterGov is _Token {
 
     function _transfer(address _from, address _to, uint256 _amount) internal {
         if (_amount > 0) {
-            require(MeterNative(this).native_mtrg_sub(_from, _amount), "builtin: insufficient balance");
+            require(_meterTracker.native_mtrg_sub(_from, _amount), "builtin: insufficient balance");
             // believed that will never overflow
-            MeterNative(this).native_mtrg_add(_to, _amount);
+            _meterTracker.native_mtrg_add(_to, _amount);
         }
         emit Transfer(_from, _to, _amount);
     }
-}
-
-contract MeterNative {
-    function native_mtr_totalSupply() public view returns(uint256);
-    function native_mtr_totalBurned() public view returns(uint256);
-
-    function native_mtr_get(address addr) public view returns(uint256);
-    function native_mtr_add(address addr, uint256 amount) public;
-    function native_mtr_sub(address addr, uint256 amount) public returns(bool);
-
-    function native_mtrg_totalSupply() public view returns(uint256);
-    function native_mtrg_totalBurned() public view returns(uint256);
-
-    function native_mtrg_get(address addr) public view returns(uint256);
-    function native_mtrg_add(address addr, uint256 amount) public;
-    function native_mtrg_sub(address addr, uint256 amount) public returns(bool);
-
-    function native_master(address addr) public view returns(address);
 }

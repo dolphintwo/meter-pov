@@ -6,6 +6,7 @@
 package builtin
 
 import (
+	"fmt"
 	"encoding/hex"
 
 	"github.com/dfinlab/meter/abi"
@@ -45,6 +46,7 @@ func mustLoadContractAddress(name string, addr meter.Address) *contract {
 		panic(errors.Wrap(err, "load ABI for '"+name+"'"))
 	}
 
+	fmt.Println("load contract", name, addr.String())
 	return &contract{
 		name,
 		addr,

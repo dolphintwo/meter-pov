@@ -5,6 +5,6 @@
 
 package gen
 
-//go:generate rm -rf ./compiled/
-//go:generate solc --optimize-runs 200 --overwrite --bin-runtime --abi -o ./compiled meter.sol executor.sol extension.sol measure.sol params.sol prototype.sol
+//go:generate rm -rf ./compiled/:
+//go:generate solc --optimize-runs 200 --overwrite --bin-runtime --abi -o ./compiled meter.sol meternative.sol executor.sol extension.sol measure.sol params.sol prototype.sol
 //go:generate go-bindata -nometadata -ignore=_ -pkg gen -o bindata.go compiled/

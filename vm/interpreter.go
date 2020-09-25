@@ -19,6 +19,7 @@ package vm
 import (
 	"fmt"
 	"sync/atomic"
+	"github.com/dfinlab/meter/meter"
 
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/params"
@@ -104,6 +105,7 @@ func (in *Interpreter) enforceRestrictions(op OpCode, operation operation, stack
 // considered a revert-and-consume-all-gas operation except for
 // errExecutionReverted which means revert-and-keep-gas-left.
 func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err error) {
+
 	// Increment the call depth which is restricted to 1024
 	in.evm.depth++
 	defer func() { in.evm.depth-- }()
@@ -112,6 +114,7 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 	// as every returning call will return new data anyway.
 	in.returnData = nil
 
+	fmt.Println("ZZZZZZZZ interpreter RUN, caontract address, caller, depth", meter.Address(contract.Address()).String(), meter.Address(contract.Caller()).String(), input, in.evm.depth)
 	// handle contract hook
 	if in.evm.InterceptContractCall != nil && contract.CodeAddr != nil {
 		// ignore callcode or delegatecall
@@ -123,10 +126,13 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 		}
 	}
 
+	fmt.Println("ZZZZZZZZ interpreter RUN111, caontract address, caller, depth", meter.Address(contract.Address()).String(), meter.Address(*contract.CodeAddr).String(), input, in.evm.depth)
 	// Don't bother with the execution if there's no code.
 	if len(contract.Code) == 0 {
 		return nil, nil
 	}
+
+	fmt.Println("ZZZZZZZZ interpreter RUN222")
 
 	var (
 		op    OpCode        // current opcode
@@ -170,13 +176,16 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 		op = contract.GetOp(pc)
 		operation := in.cfg.JumpTable[op]
 		if !operation.valid {
+			fmt.Println("ZZZZZZZZ interpreter RUN33", "invalid opcode", int(op))
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
 		}
 		if err := operation.validateStack(stack); err != nil {
+			fmt.Println("ZZZZZZZZ interpreter RUN44", "error", err)
 			return nil, err
 		}
 		// If the operation is valid, enforce and write restrictions
 		if err := in.enforceRestrictions(op, operation, stack); err != nil {
+			fmt.Println("ZZZZZZZZ interpreter RUN55", "error", err)
 			return nil, err
 		}
 
@@ -186,11 +195,13 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 		if operation.memorySize != nil {
 			memSize, overflow := bigUint64(operation.memorySize(stack))
 			if overflow {
+				fmt.Println("ZZZZZZZZ interpreter RUN66", "error", errGasUintOverflow)
 				return nil, errGasUintOverflow
 			}
 			// memory is expanded in words of 32 bytes. Gas
 			// is also calculated in words.
 			if memorySize, overflow = math.SafeMul(toWordSize(memSize), 32); overflow {
+				fmt.Println("ZZZZZZZZ interpreter RUN77", "error", errGasUintOverflow)
 				return nil, errGasUintOverflow
 			}
 		}
@@ -198,6 +209,7 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 		// cost is explicitly set so that the capture state defer method can get the proper cost
 		cost, err = operation.gasCost(in.gasTable, in.evm, contract, stack, mem, memorySize)
 		if err != nil || !contract.UseGas(cost) {
+			fmt.Println("ZZZZZZZZ interpreter RUN88", "error", ErrOutOfGas)
 			return nil, ErrOutOfGas
 		}
 		if memorySize > 0 {
@@ -224,14 +236,19 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 
 		switch {
 		case err != nil:
+			fmt.Println("ZZZZZZZZ interpreter RUN100", "error", err)
 			return nil, err
 		case operation.reverts:
+			fmt.Println("ZZZZZZZZ interpreter RUN111", "error", errExecutionReverted)
 			return res, errExecutionReverted
 		case operation.halts:
+			fmt.Println("ZZZZZZZZ interpreter RUN122", "halts")
 			return res, nil
 		case !operation.jumps:
+			fmt.Println("ZZZZZZZZ interpreter RUN133", "jumps")
 			pc++
 		}
 	}
+	fmt.Println("ZZZZZZZZ interpreter RUN99", "successful")
 	return nil, nil
 }

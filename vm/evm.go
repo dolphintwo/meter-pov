@@ -20,6 +20,8 @@ import (
 	"math/big"
 	"sync/atomic"
 	"time"
+	"fmt"
+	"github.com/dfinlab/meter/meter"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -162,6 +164,8 @@ func (evm *EVM) Depth() int {
 // the necessary steps to create accounts and reverses the state in case of an
 // execution error or failed value transfer.
 func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int, token byte) (ret []byte, leftOverGas uint64, err error) {
+	fmt.Println("ZZZZZZZZcall  pcaller, paddr in call",  meter.Address(caller.Address()).String(), meter.Address(addr).String(), input)
+
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -232,6 +236,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 // CallCode differs from Call in the sense that it executes the given address'
 // code with the caller as context.
 func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int, token byte) (ret []byte, leftOverGas uint64, err error) {
+	fmt.Print("ZZZZZZZ--- callcode",meter.Address(caller.Address()).String(), meter.Address(addr).String(), input)
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -271,6 +276,7 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 // DelegateCall differs from CallCode in the sense that it executes the given address'
 // code with the caller as context and the caller is set to the caller of the caller.
 func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+	fmt.Println("ZZZZZZZZ Delegatescall  pcaller, paddr in call",  meter.Address(caller.Address()).String(), meter.Address(addr).String(), input)
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -303,6 +309,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 // Opcodes that attempt to perform such modifications will result in exceptions
 // instead of performing the modifications.
 func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+	fmt.Println("ZZZZZZZZ Staticscall  pcaller, paddr in call",  meter.Address(caller.Address()).String(), meter.Address(addr).String(), input)
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -343,6 +350,8 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 
 // create creates a new contract using code as deployment code.
 func (evm *EVM) create(caller ContractRef, code []byte, gas uint64, value *big.Int, token byte, contractAddr common.Address) ([]byte, common.Address, uint64, error) {
+	fmt.Println("ZZZZZZZZ create",  meter.Address(caller.Address()).String(), len(code), gas)
+
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
 	if evm.depth > int(params.CallCreateDepth) {
@@ -396,12 +405,14 @@ func (evm *EVM) create(caller ContractRef, code []byte, gas uint64, value *big.I
 
 	// check whether the max code size has been exceeded
 	maxCodeSizeExceeded := evm.ChainConfig().IsEIP158(evm.BlockNumber) && len(ret) > params.MaxCodeSize
+	fmt.Println("ZZZZZZZZ create 1111", maxCodeSizeExceeded, len(ret), ret)
 	// if the contract creation ran successfully and no errors were returned
 	// calculate the gas required to store the code. If the code could not
 	// be stored due to not enough gas set an error and let it be handled
 	// by the error checking condition below.
 	if err == nil && !maxCodeSizeExceeded {
 		createDataGas := uint64(len(ret)) * params.CreateDataGas
+		fmt.Println("ZZZZZZZZ create 222", createDataGas, contract.Gas)
 		if contract.UseGas(createDataGas) {
 			evm.StateDB.SetCode(contractAddr, ret)
 		} else {
@@ -413,6 +424,7 @@ func (evm *EVM) create(caller ContractRef, code []byte, gas uint64, value *big.I
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in homestead this also counts for code storage gas errors.
 	if maxCodeSizeExceeded || (err != nil && (evm.ChainConfig().IsHomestead(evm.BlockNumber) || err != ErrCodeStoreOutOfGas)) {
+		fmt.Println("ZZZZZZZZ create 3333", maxCodeSizeExceeded, err)
 		evm.StateDB.RevertToSnapshot(snapshot)
 		if err != errExecutionReverted {
 			contract.UseGas(contract.Gas)
@@ -425,6 +437,7 @@ func (evm *EVM) create(caller ContractRef, code []byte, gas uint64, value *big.I
 	if evm.vmConfig.Debug && evm.depth == 0 {
 		evm.vmConfig.Tracer.CaptureEnd(ret, gas-contract.Gas, time.Since(start), err)
 	}
+	fmt.Println("ZZZZZZZZ create 444", ret,contractAddr, contract.Gas, err)
 	return ret, contractAddr, contract.Gas, err
 
 }

@@ -50,6 +50,22 @@ func NewTestnet() *Genesis {
 			SetAccountLockProfileState(profiles, state)
 
 			// setup builtin contracts
+			m := new(big.Int).Mul(big.NewInt(1e18), big.NewInt(50))
+			state.SetEnergy(builtin.Meter.Address, m)
+			state.SetBalance(builtin.Meter.Address, m)
+			energySupply.Add(energySupply, m)
+			tokenSupply.Add(tokenSupply, m)
+
+			state.SetEnergy(builtin.MeterGov.Address, m)
+			state.SetBalance(builtin.MeterGov.Address, m)
+			energySupply.Add(energySupply, m)
+			tokenSupply.Add(tokenSupply, m)
+
+			state.SetEnergy(builtin.MeterTracker.Address, m)
+			state.SetBalance(builtin.MeterTracker.Address, m)
+			energySupply.Add(energySupply, m)
+			tokenSupply.Add(tokenSupply, m)
+
 			state.SetCode(builtin.Meter.Address, builtin.Meter.RuntimeBytecodes())
 			state.SetCode(builtin.MeterGov.Address, builtin.MeterGov.RuntimeBytecodes())
 			state.SetCode(builtin.MeterTracker.Address, builtin.MeterTracker.RuntimeBytecodes())

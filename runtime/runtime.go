@@ -199,25 +199,36 @@ func (rt *Runtime) newEVM(stateDB *statedb.StateDB, clauseIndex uint32, txCtx *x
 		NewContractAddress: func(_ *vm.EVM, counter uint32) common.Address {
 			return common.Address(meter.CreateContractAddress(txCtx.ID, clauseIndex, counter))
 		},
-		InterceptContractCall: func(evm *vm.EVM, contract *vm.Contract, readonly bool) ([]byte, error, bool) {
+		InterceptContractCall: func(evm *vm.EVM, contract *vm.Contract, readonly bool) ([]byte, error, bool) {			
+			fmt.Println("TTTTTTTTTTT", "evmDepth", evm.Depth(), meter.Address(contract.Address()).String(), meter.Address(contract.Caller()).String(), contract.Input)
 			if evm.Depth() < 2 {
 				lastNonNativeCallGas = contract.Gas
 				// skip direct calls
 				return nil, nil, false
 			}
 
+			fmt.Println("HHHHHHHHHHHH", meter.Address(contract.Address()).String(), meter.Address(contract.Caller()).String(), contract.Input)
+			/***
 			if contract.Address() != contract.Caller() {
 				lastNonNativeCallGas = contract.Gas
 				// skip native calls from other contract
 				return nil, nil, false
 			}
-
+			***/
+			/*
+			if contract.Caller() != builtin.Meter.Address &&  contract.Caller() != builtin.MeterGov.Address {
+				lastNonNativeCallGas = contract.Gas
+				// skip native calls from other contract
+				return nil, nil, false
+			}
+			*/
+			fmt.Println("HHHHHHHHHHHH", meter.Address(contract.Address()).String(),meter.Address(contract.Caller()).String(), builtin.MeterGov.Address.String(), builtin.Meter.Address.String(), contract.Input)
 			abi, run, found := builtin.FindNativeCall(meter.Address(contract.Address()), contract.Input)
 			if !found {
 				lastNonNativeCallGas = contract.Gas
 				return nil, nil, false
 			}
-
+			fmt.Println("XXXXXXXXXX", found, abi)
 			if readonly && !abi.Const() {
 				panic("invoke non-const method in readonly env")
 			}
@@ -233,7 +244,7 @@ func (rt *Runtime) newEVM(stateDB *statedb.StateDB, clauseIndex uint32, txCtx *x
 			if contract.Gas > lastNonNativeCallGas {
 				panic("serious bug: native call returned gas over consumed")
 			}
-
+			fmt.Println("YYYYY", found, abi)
 			ret, err := xenv.New(abi, rt.seeker, rt.state, rt.ctx, txCtx, evm, contract).Call(run)
 			return ret, err, true
 		},
