@@ -13,7 +13,8 @@ contract Meter is _Token {
     IMeterNative _meterTracker;
 
     constructor() public payable {
-       _meterTracker = IMeterNative(0xDc7908F5088852b513DFB0b126B21f7aa6DF9678);
+       //_meterTracker = IMeterNative(0xDc7908F5088852b513DFB0b126B21f7aa6DF9678);
+       _meterTracker = IMeterNative(0x0000000000000000004D657465724e6174697665);
     }
 
     function name() public pure returns(string) {
@@ -87,7 +88,8 @@ contract MeterGov is _Token {
     IMeterNative _meterTracker;
 
     constructor() public payable {
-       _meterTracker = IMeterNative(0xDc7908F5088852b513DFB0b126B21f7aa6DF9678); 
+       //_meterTracker = IMeterNative(0xDc7908F5088852b513DFB0b126B21f7aa6DF9678); 
+       _meterTracker = IMeterNative(0x0000000000000000004D657465724e6174697665); 
     }
 
     function name() public pure returns(string) {

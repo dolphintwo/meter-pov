@@ -6,11 +6,14 @@
 package params
 
 import (
+	"bytes"
+	"fmt"
 	"math/big"
+	"strings"
 
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/dfinlab/meter/state"
 	"github.com/dfinlab/meter/meter"
+	"github.com/dfinlab/meter/state"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // Params binder of `Params` contract.
@@ -42,5 +45,33 @@ func (p *Params) Set(key meter.Bytes32, value *big.Int) {
 			return nil, nil
 		}
 		return rlp.EncodeToBytes(value)
+	})
+}
+
+// Get native way to get param.
+func (p *Params) GetAddress(key meter.Bytes32) (addr meter.Address) {
+	p.state.DecodeStorage(p.addr, key, func(raw []byte) error {
+		if len(strings.TrimSpace(string(raw))) >= 0 {
+			err := rlp.Decode(bytes.NewReader(raw), &addr)
+			if err != nil {
+				addr = meter.Address{}
+				if err.Error() == "EOF" && len(raw) == 0 {
+					// EOF is caused by no value, is not error case, so returns with empty slice
+					return nil
+				} else {
+					fmt.Println("Error during decoding auction control block", "err", err.Error())
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	return
+}
+
+// Set native way to set param.
+func (p *Params) SetAddress(key meter.Bytes32, addr meter.Address) {
+	p.state.EncodeStorage(p.addr, key, func() ([]byte, error) {
+		return rlp.EncodeToBytes(&addr)
 	})
 }

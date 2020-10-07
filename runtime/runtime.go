@@ -114,6 +114,27 @@ func (rt *Runtime) ScriptEngineCheck(d []byte) bool {
 	return (d[0] == 0xff) && (d[1] == 0xff) && (d[2] == 0xff) && (d[3] == 0xff)
 }
 
+func (rt *Runtime) FromNativeContract(caller meter.Address) bool {
+
+	nativeMtrERC20 := builtin.Params.Native(rt.State()).GetAddress(meter.KeyNativeMtrERC20Address)
+	nativeMtrgERC20 := builtin.Params.Native(rt.State()).GetAddress(meter.KeyNativeMtrgERC20Address)
+	nativeParams := builtin.Params.Address
+	nativeExecutor := builtin.Executor.Address
+	nativeProtype := builtin.Prototype.Address
+	nativeExtension := builtin.Extension.Address
+
+	fmt.Println("HHHHHHHHHHHH1", "nativeMtrERC20", nativeMtrERC20)
+	fmt.Println("HHHHHHHHHHHH1", "nativeMtrgERC20", nativeMtrgERC20)
+	fmt.Println("HHHHHHHHHHHH2", "nativeParams", nativeParams, "nativeExecutor", nativeExecutor, "nativeProtype", nativeProtype, "nativeExtension", nativeExtension)
+
+	if caller != nativeMtrERC20 && caller != nativeMtrgERC20 && caller != nativeParams && caller != nativeExecutor &&
+		caller != nativeProtype && caller != nativeExtension {
+		return false
+	}
+
+	return true
+}
+
 // retrict enforcement ONLY applies to meterGov, not meter
 func (rt *Runtime) restrictTransfer(stateDB *statedb.StateDB, addr meter.Address, amount *big.Int, token byte) bool {
 	restrict, _, lockMtrg := accountlock.RestrictByAccountLock(addr, rt.State())
@@ -199,7 +220,7 @@ func (rt *Runtime) newEVM(stateDB *statedb.StateDB, clauseIndex uint32, txCtx *x
 		NewContractAddress: func(_ *vm.EVM, counter uint32) common.Address {
 			return common.Address(meter.CreateContractAddress(txCtx.ID, clauseIndex, counter))
 		},
-		InterceptContractCall: func(evm *vm.EVM, contract *vm.Contract, readonly bool) ([]byte, error, bool) {			
+		InterceptContractCall: func(evm *vm.EVM, contract *vm.Contract, readonly bool) ([]byte, error, bool) {
 			fmt.Println("TTTTTTTTTTT", "evmDepth", evm.Depth(), meter.Address(contract.Address()).String(), meter.Address(contract.Caller()).String(), contract.Input)
 			if evm.Depth() < 2 {
 				lastNonNativeCallGas = contract.Gas
@@ -216,13 +237,18 @@ func (rt *Runtime) newEVM(stateDB *statedb.StateDB, clauseIndex uint32, txCtx *x
 			}
 			***/
 			/*
-			if contract.Caller() != builtin.Meter.Address &&  contract.Caller() != builtin.MeterGov.Address {
+				if contract.Caller() != builtin.Meter.Address &&  contract.Caller() != builtin.MeterGov.Address {
+					lastNonNativeCallGas = contract.Gas
+					// skip native calls from other contract
+					return nil, nil, false
+				}
+			*/
+			if rt.FromNativeContract(meter.Address(contract.Caller())) != true {
 				lastNonNativeCallGas = contract.Gas
 				// skip native calls from other contract
 				return nil, nil, false
 			}
-			*/
-			fmt.Println("HHHHHHHHHHHH", meter.Address(contract.Address()).String(),meter.Address(contract.Caller()).String(), builtin.MeterGov.Address.String(), builtin.Meter.Address.String(), contract.Input)
+
 			abi, run, found := builtin.FindNativeCall(meter.Address(contract.Address()), contract.Input)
 			if !found {
 				lastNonNativeCallGas = contract.Gas

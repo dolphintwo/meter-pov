@@ -74,6 +74,8 @@ var (
 	KeyBorrowInterestRate     = BytesToBytes32([]byte("borrower-interest-rate"))
 	KeyConsensusCommitteeSize = BytesToBytes32([]byte("consensus-committee-size"))
 	KeyConsensusDelegateSize  = BytesToBytes32([]byte("consensus-delegate-size"))
+	KeyNativeMtrERC20Address  = BytesToBytes32([]byte("native-mtr-erc20-address"))
+	KeyNativeMtrgERC20Address = BytesToBytes32([]byte("native-mtrg-erc20-address"))
 
 	// Initial values
 	InitialRewardRatio         = big.NewInt(3e17) // 30%

@@ -6,6 +6,7 @@
 package genesis
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/dfinlab/meter/builtin"
@@ -20,11 +21,15 @@ func NewTestnet() *Genesis {
 	launchTime := uint64(1530014400) // 'Tue Jun 26 2018 20:00:00 GMT+0800 (CST)'
 
 	// use this address as executor instead of builtin one, for test purpose
-	executor, _ := meter.ParseAddress("0xd1e56316b6472cbe9897a577a0f3826932e95863")
+	//executor, _ := meter.ParseAddress("0xd1e56316b6472cbe9897a577a0f3826932e95863")
+	executor, _ := meter.ParseAddress("0x1de8ca2f973d026300af89041b0ecb1c0803a7e6")
 	acccount0, _ := meter.ParseAddress("0x1de8ca2f973d026300af89041b0ecb1c0803a7e6")
 
 	//master0, _ := meter.ParseAddress("0xbc675bf8f737faad6195d20917a57bb0f0ddb5f6")
 	endorser0, _ := meter.ParseAddress("0x1a07d16b152e9a3f5c353bf05944ade8de1a37e9")
+
+	fmt.Println("KeyNativeMtrERC20Address", meter.KeyNativeMtrERC20Address)
+	fmt.Println("KeyNativeMtrgERC20Address", meter.KeyNativeMtrgERC20Address)
 
 	builder := new(Builder).
 		Timestamp(launchTime).

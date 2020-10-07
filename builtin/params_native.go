@@ -8,9 +8,9 @@ package builtin
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/dfinlab/meter/meter"
 	"github.com/dfinlab/meter/xenv"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func init() {
@@ -40,6 +40,25 @@ func init() {
 
 			env.UseGas(meter.SstoreSetGas)
 			Params.Native(env.State()).Set(meter.Bytes32(args.Key), args.Value)
+			return nil
+		}},
+		{"native_get_address", func(env *xenv.Environment) []interface{} {
+			var key common.Hash
+			env.ParseArgs(&key)
+
+			env.UseGas(meter.SloadGas)
+			v := Params.Native(env.State()).GetAddress(meter.Bytes32(key))
+			return []interface{}{v}
+		}},
+		{"native_set_address", func(env *xenv.Environment) []interface{} {
+			var args struct {
+				Key   common.Hash
+				Value common.Address
+			}
+			env.ParseArgs(&args)
+
+			env.UseGas(meter.SstoreSetGas)
+			Params.Native(env.State()).SetAddress(meter.Bytes32(args.Key), meter.Address(args.Value))
 			return nil
 		}},
 	}

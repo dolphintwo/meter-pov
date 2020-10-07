@@ -21,8 +21,18 @@ contract Params {
     function get(bytes32 _key) public view returns (uint256) {
         return ParamsNative(this).native_get(_key);
     }
+    function setAddress(bytes32 _key, address _value) public {
+        require(msg.sender == executor(), "builtin: executor required");
 
+        ParamsNative(this).native_set_address(_key, _value);
+        emit SetAddress(_key, _value);
+    }
+
+    function getAddress(bytes32 _key) public view returns (address) {
+        return ParamsNative(this).native_get_address(_key);
+    }
     event Set(bytes32 indexed key, uint256 value);
+    event SetAddress(bytes32 indexed key, address value);
 }
 
 contract ParamsNative {
@@ -31,4 +41,8 @@ contract ParamsNative {
     function native_set(bytes32 key, uint256 value) public;
 
     function native_get(bytes32 key) public view returns (uint256);
+
+    function native_set_address(bytes32 key, address value) public;
+
+    function native_get_address(bytes32 key) public view returns(address);
 }
