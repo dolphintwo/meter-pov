@@ -13,11 +13,14 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/dfinlab/meter/api"
 	"github.com/dfinlab/meter/api/doc"
@@ -79,6 +82,10 @@ func float64frombytes(bytes []byte) float64 {
 }
 
 func main() {
+	go func() {
+		fmt.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	app := cli.App{
 		Version:   fullVersion(),
 		Name:      "Meter",
