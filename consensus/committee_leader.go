@@ -189,7 +189,6 @@ func (cl *ConsensusLeader) GenerateAnnounceMsg(height uint32, round uint32) bool
 	var m ConsensusMessage = msg
 	cl.state = COMMITTEE_LEADER_ANNOUNCED
 	cl.SendMsg(m)
-	cl.voterAggSig.Free()
 
 	signMsg := cl.csReactor.BuildAnnounceSignMsg(cl.csReactor.myPubKey, cmnHdr.EpochID, uint64(cmnHdr.Height), uint32(cmnHdr.Round))
 	msgHash := cl.csReactor.csCommon.Hash256Msg([]byte(signMsg))
@@ -206,7 +205,6 @@ func (cl *ConsensusLeader) GenerateAnnounceMsg(height uint32, round uint32) bool
 
 			// Aggregate signature and seal the signature
 			cl.announceSigAggregator.AggregateAndSeal()
-			// cl.announceVoterAggSig = cl.csReactor.csCommon.AggregateSign(cl.announceVoterSig)
 			cl.csReactor.UpdateActualCommittee(cl.csReactor.curCommitteeIndex, cl.csReactor.config)
 
 			//send out announce notary
@@ -360,10 +358,6 @@ func (cl *ConsensusLeader) ProcessCommitMsg(commitMsg *CommitCommitteeMessage, s
 func (cl *ConsensusLeader) committeeEstablished() {
 	cl.state = COMMITTEE_LEADER_COMMITED
 	cl.notaryThresholdTimer.Stop()
-
-	//aggregate signature
-	// Aggregate signature here
-	// cl.notaryVoterAggSig = cl.csReactor.csCommon.AggregateSign(cl.notaryVoterSig)
 
 	//Finally, go to init
 	cl.MoveInitState(cl.state)
