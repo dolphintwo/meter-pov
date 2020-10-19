@@ -189,6 +189,7 @@ func (cl *ConsensusLeader) GenerateAnnounceMsg(height uint32, round uint32) bool
 	var m ConsensusMessage = msg
 	cl.state = COMMITTEE_LEADER_ANNOUNCED
 	cl.SendMsg(m)
+	cl.voterAggSig.Free()
 
 	signMsg := cl.csReactor.BuildAnnounceSignMsg(cl.csReactor.myPubKey, cmnHdr.EpochID, uint64(cmnHdr.Height), uint32(cmnHdr.Round))
 	msgHash := cl.csReactor.csCommon.Hash256Msg([]byte(signMsg))
@@ -203,11 +204,8 @@ func (cl *ConsensusLeader) GenerateAnnounceMsg(height uint32, round uint32) bool
 			//stop announce Timer
 			//cl.announceThresholdTimer.Stop()
 
-			// seal the signature
-			cl.announceSigAggregator.Seal()
-
-			// Aggregate signature here
-			cl.announceSigAggregator.Aggregate()
+			// Aggregate signature and seal the signature
+			cl.announceSigAggregator.AggregateAndSeal()
 			// cl.announceVoterAggSig = cl.csReactor.csCommon.AggregateSign(cl.announceVoterSig)
 			cl.csReactor.UpdateActualCommittee(cl.csReactor.curCommitteeIndex, cl.csReactor.config)
 
@@ -263,7 +261,7 @@ func (cl *ConsensusLeader) GenerateNotaryAnnounceMsg() bool {
 
 		NotarizeBitArray: cl.announceSigAggregator.bitArray,
 		NotarizeMsgHash:  cl.announceSigAggregator.msgHash,
-		NotarizeAggSig:   cl.announceSigAggregator.Aggregate(),
+		NotarizeAggSig:   cl.announceSigAggregator.AggregateAndSeal(),
 
 		CommitteeSize:    cl.csReactor.committeeSize,
 		CommitteeMembers: cl.csReactor.BuildCommitteeInfoFromMember(cl.csReactor.csCommon.GetSystem(), cl.csReactor.curActualCommittee),
@@ -279,6 +277,7 @@ func (cl *ConsensusLeader) GenerateNotaryAnnounceMsg() bool {
 	cl.csReactor.logger.Debug("Generate Notary Announce Message", "msg", msg.String())
 
 	var m ConsensusMessage = msg
+	cl.voterAggSig.Free()
 	cl.SendMsg(m)
 	// cl.state = COMMITTEE_LEADER_NOTARYSENT
 
@@ -351,6 +350,7 @@ func (cl *ConsensusLeader) ProcessCommitMsg(commitMsg *CommitCommitteeMessage, s
 			return false
 		}
 	}
+	sig.Free()
 
 	// 2. add src to bitArray.
 	cl.announceSigAggregator.Add(index, msgHash, commitMsg.BlsSignature, validator.BlsPubKey)

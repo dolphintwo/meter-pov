@@ -56,3 +56,11 @@ func (cc *BlsCommon) GetPrivKey() bls.PrivateKey {
 func (cc *BlsCommon) GetPubKey() *bls.PublicKey {
 	return &cc.PubKey
 }
+
+func (cc *BlsCommon) Free() {
+	cc.system.Free()
+	cc.params.Free()
+	cc.pairing.Free()
+	cc.PubKey.Free()
+	cc.PrivKey.Free()
+}

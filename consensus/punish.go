@@ -181,6 +181,8 @@ func (conR *ConsensusReactor) calcDoubleSigner(common *ConsensusCommon, blocks [
 				}
 				result = append(result, info)
 				conR.logger.Debug("doubleSigner", "height", info.Info.Height, "signature1", sig1, "signature2", sig2)
+				sig1.Free()
+				sig2.Free()
 			}
 		}
 	}

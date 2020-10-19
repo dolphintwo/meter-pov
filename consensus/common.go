@@ -105,23 +105,19 @@ func (cc *ConsensusCommon) VerifySignature(signature, msgHash, blsPK []byte) boo
 		fmt.Println("signature unmarshal failed")
 		return false
 	}
-	return bls.Verify(sig, fixedMsgHash, pubkey)
+	verified := bls.Verify(sig, fixedMsgHash, pubkey)
+	sig.Free()
+	return verified
 }
 
-func (cc *ConsensusCommon) AggregateSign(sigs []bls.Signature) bls.Signature {
+func (cc *ConsensusCommon) AggregateSign(sigs []bls.Signature) []byte {
 	sig, err := bls.Aggregate(sigs, cc.system)
 	if err != nil {
 		fmt.Println("aggreate signature failed")
 	}
-	return sig
-}
-
-func (cc *ConsensusCommon) AggregateSign2(sigs []bls.Signature) []byte {
-	sig, err := bls.Aggregate(sigs, cc.system)
-	if err != nil {
-		fmt.Println("aggreate signature failed")
-	}
-	return cc.system.SigToBytes(sig)
+	sigBytes := cc.system.SigToBytes(sig)
+	sig.Free()
+	return sigBytes
 }
 
 // all voter sign the same msg.

@@ -20,7 +20,6 @@ import (
 type SignatureAggregator struct {
 	logger     log15.Logger
 	msgHash    [32]byte
-	sigs       []bls.Signature
 	sigBytes   [][]byte
 	pubkeys    []bls.PublicKey
 	bitArray   *cmn.BitArray
@@ -45,7 +44,6 @@ func newSignatureAggregator(size uint32, system bls.System, msgHash [32]byte, va
 	logger.Info("Init signature aggregator", "size", size)
 	return &SignatureAggregator{
 		logger:     logger,
-		sigs:       make([]bls.Signature, size),
 		sigBytes:   make([][]byte, size),
 		pubkeys:    make([]bls.PublicKey, size),
 		bitArray:   cmn.NewBitArray(int(size)),
@@ -86,14 +84,14 @@ func (sa *SignatureAggregator) Add(index int, msgHash [32]byte, signature []byte
 			return false
 		}
 
-		sig, err := sa.system.SigFromBytes(signature)
+		s, err := sa.system.SigFromBytes(signature)
 		if err != nil {
 			sa.logger.Error("invalid signature", "err", err)
 			return false
 		}
+		s.Free()
 		sa.bitArray.SetIndex(index, true)
 		sa.sigBytes[index] = signature
-		sa.sigs[index] = sig
 		sa.pubkeys[index] = pubkey
 		sa.logger.Info(fmt.Sprintf("vote counted, %d out of %d has voted", sa.bitArray.Count(), sa.size), "voterIndex", index)
 		return true
@@ -112,19 +110,20 @@ func (sa *SignatureAggregator) Count() uint32 {
 	}
 }
 
-// seal the signature, no future modification could be done anymore
-func (sa *SignatureAggregator) Seal() {
+// aggregate the signatures and seal it, no future modification could be done anymore
+func (sa *SignatureAggregator) AggregateAndSeal() []byte {
 	if sa == nil {
-		return
+		return make([]byte, 0)
 	}
 	sa.sealed = true
-}
-
-func (sa *SignatureAggregator) Aggregate() []byte {
 	sigs := make([]bls.Signature, 0)
 	for i := 0; i < int(sa.size); i++ {
 		if sa.bitArray.GetIndex(i) {
-			sigs = append(sigs, sa.sigs[i])
+			sig, err := sa.system.SigFromBytes(sa.sigBytes[i])
+			if err != nil {
+				continue
+			}
+			sigs = append(sigs, sig)
 		}
 	}
 	sigAgg, err := bls.Aggregate(sigs, sa.system)
@@ -133,6 +132,12 @@ func (sa *SignatureAggregator) Aggregate() []byte {
 	}
 	b := sa.system.SigToBytes(sigAgg)
 	sa.sigAgg = b
+
+	// clean up signatures
+	sigAgg.Free()
+	for _, sig := range sigs {
+		sig.Free()
+	}
 	return b
 }
 
@@ -141,4 +146,8 @@ func (sa *SignatureAggregator) BitArrayString() string {
 		return sa.bitArray.String()
 	}
 	return ""
+}
+
+func (sa *SignatureAggregator) CleanAll() {
+
 }

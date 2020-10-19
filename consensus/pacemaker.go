@@ -436,9 +436,6 @@ func (p *Pacemaker) OnReceiveVote(mi *consensusMsgInfo) error {
 		p.csReactor.logger.Info("*** Reached majority, new QC formed", "committeeSize", p.csReactor.committeeSize, "count", voteCount)
 	}
 
-	// seal the signature, avoid re-trigger
-	p.sigAggregator.Seal()
-
 	//reach 2/3 majority, trigger the pipeline cmd
 	qc, err := p.generateNewQCNode(b)
 	if err != nil {

@@ -18,11 +18,11 @@ type timeoutID struct {
 }
 
 type timeoutVal struct {
-	Counter   uint64
-	PeerID    []byte
-	PeerIndex uint32
-	MsgHash   [32]byte
-	Signature bls.Signature
+	Counter        uint64
+	PeerID         []byte
+	PeerIndex      uint32
+	MsgHash        [32]byte
+	SignatureBytes []byte
 }
 
 type PMTimeoutCertManager struct {
@@ -65,6 +65,7 @@ func (tm *PMTimeoutCertManager) collectSignature(newViewMsg *PMNewViewMessage) {
 			if err != nil {
 				tm.pacemaker.logger.Error("error convert signature", "err", err)
 			}
+			sig.Free()
 			var vals []*timeoutVal
 			vals, ok := tm.cache[id]
 			if !ok {
@@ -72,11 +73,11 @@ func (tm *PMTimeoutCertManager) collectSignature(newViewMsg *PMNewViewMessage) {
 			}
 			tm.cache[id] = append(vals, &timeoutVal{
 				// TODO: set counter
-				Counter:   newViewMsg.TimeoutCounter,
-				PeerID:    newViewMsg.PeerID,
-				PeerIndex: newViewMsg.PeerIndex,
-				MsgHash:   newViewMsg.SignedMessageHash,
-				Signature: sig,
+				Counter:        newViewMsg.TimeoutCounter,
+				PeerID:         newViewMsg.PeerID,
+				PeerIndex:      newViewMsg.PeerIndex,
+				MsgHash:        newViewMsg.SignedMessageHash,
+				SignatureBytes: newViewMsg.PeerSignature,
 			})
 		}
 	}
@@ -104,17 +105,24 @@ func (tm *PMTimeoutCertManager) getTimeoutCert(height, round uint32) *PMTimeoutC
 
 	var sigs []bls.Signature
 	for _, v := range vals {
-		sigs = append(sigs, v.Signature)
+		sig, err := tm.pacemaker.csReactor.csCommon.GetSystem().SigFromBytes(v.SignatureBytes)
+		if err != nil {
+			continue
+		}
+		sigs = append(sigs, sig)
 	}
 	aggSig := tm.pacemaker.csReactor.csCommon.AggregateSign(sigs)
-	aggSigBytes := tm.pacemaker.csReactor.csCommon.GetSystem().SigToBytes(aggSig)
+	// cleanup
+	for _, sig := range sigs {
+		sig.Free()
+	}
 	return &PMTimeoutCert{
 		TimeoutHeight: height,
 		TimeoutRound:  round,
 		//TODO: better way?
 		TimeoutCounter:  uint32(vals[0].Counter),
 		TimeoutBitArray: bitArray,
-		TimeoutAggSig:   aggSigBytes,
+		TimeoutAggSig:   aggSig,
 	}
 }
 

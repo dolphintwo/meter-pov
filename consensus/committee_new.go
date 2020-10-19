@@ -361,6 +361,7 @@ func (conR *ConsensusReactor) ProcessNewCommitteeMessage(newCommitteeMsg *NewCom
 			return false
 		}
 	}
+	sig.Free()
 
 	// collect the votes
 	nc.sigAggregator.Add(index, msgHash, newCommitteeMsg.BlsSignature, validator.BlsPubKey)
@@ -374,20 +375,13 @@ func (conR *ConsensusReactor) ProcessNewCommitteeMessage(newCommitteeMsg *NewCom
 	if LeaderMajorityTwoThird(nc.sigAggregator.Count(), conR.committeeSize) {
 		conR.logger.Debug("NewCommitteeMessage, 2/3 Majority reached", "Recvd", nc.sigAggregator.Count(), "committeeSize", conR.committeeSize, "replay", conR.newCommittee.Replay)
 
-		// seal the signature, avoid re-trigger
-		nc.sigAggregator.Seal()
-
 		// Now it's time schedule leader
 		if conR.csPacemaker.IsStopped() == false {
 			conR.csPacemaker.Stop()
 		}
 
-		// nc.voterNum = 0
-		aggSigBytes := nc.sigAggregator.Aggregate()
+		aggSigBytes := nc.sigAggregator.AggregateAndSeal()
 		aggSig, _ := conR.csCommon.system.SigFromBytes(aggSigBytes)
-
-		// aggregate the signatures
-		// nc.voterAggSig = conR.csCommon.AggregateSign(nc.voterSig)
 
 		if conR.newCommittee.Replay == true {
 			conR.ScheduleReplayLeader(epochID, height, round,

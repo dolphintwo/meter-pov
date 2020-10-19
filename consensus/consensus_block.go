@@ -273,6 +273,7 @@ func (c *ConsensusReactor) validateEvidence(ev *block.Evidence, blk *block.Block
 		c.logger.Error("voting signature validate error")
 		return consensusError(fmt.Sprintf("voting signature validate error"))
 	}
+	voteSig.Free()
 
 	//validate notarize signature
 	notarizeSig, err := system.SigFromBytes(ev.NotarizeSig)
@@ -293,6 +294,7 @@ func (c *ConsensusReactor) validateEvidence(ev *block.Evidence, blk *block.Block
 		c.logger.Error("notarize signature validate error")
 		return consensusError(fmt.Sprintf("notarize signature validate error"))
 	}
+	notarizeSig.Free()
 	return nil
 }
 
