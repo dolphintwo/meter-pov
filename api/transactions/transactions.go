@@ -177,6 +177,7 @@ func (t *Transactions) handleTxPool(w http.ResponseWriter, req *http.Request) er
 }
 
 func (t *Transactions) handleSendTransaction(w http.ResponseWriter, req *http.Request) error {
+	fmt.Println("HANDLE SEND TRANSACTION")
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return err
@@ -189,6 +190,7 @@ func (t *Transactions) handleSendTransaction(w http.ResponseWriter, req *http.Re
 		return utils.BadRequest(errors.New("body: empty body"))
 	}
 	var sendTx = func(tx *tx.Transaction) error {
+		fmt.Println("SEND TX: ", tx.String())
 		if err := t.pool.Add(tx); err != nil {
 			if txpool.IsBadTx(err) {
 				return utils.BadRequest(err)

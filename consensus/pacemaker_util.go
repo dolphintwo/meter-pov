@@ -323,7 +323,7 @@ func (p *Pacemaker) asyncSendPacemakerMsg(msg ConsensusMessage, relay bool, peer
 }
 
 func (p *Pacemaker) generateNewQCNode(b *pmBlock) (*pmQuorumCert, error) {
-	aggSigBytes := p.sigAggregator.Aggregate()
+	aggSigBytes := p.sigAggregator.AggregateAndSeal()
 
 	return &pmQuorumCert{
 		QCNode: b,

@@ -41,6 +41,7 @@ func verifyBls(privKey bls.PrivateKey, pubKey bls.PublicKey) bool {
 	msgHash := sha256.Sum256([]byte(signMsg))
 	sig := bls.Sign(msgHash, privKey)
 	valid := bls.Verify(sig, msgHash, pubKey)
+	sig.Free()
 	return valid
 }
 
