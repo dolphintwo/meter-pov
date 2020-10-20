@@ -255,6 +255,17 @@ func (p *TxPool) Executables() tx.Transactions {
 	return nil
 }
 
+func (p *TxPool) ExecutablesCount() int {
+	if sorted := p.executables.Load(); sorted != nil {
+		return len(sorted.(tx.Transactions))
+	}
+	return 0
+}
+
+func (p *TxPool) TotalCount() int {
+	return p.all.Len()
+}
+
 // Fill fills txs into pool.
 func (p *TxPool) Fill(txs tx.Transactions) {
 	txObjs := make([]*txObject, 0, len(txs))

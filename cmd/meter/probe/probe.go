@@ -3,12 +3,15 @@ package probe
 import (
 	"bytes"
 	"net/http"
+	"runtime"
 	"strings"
 
 	"github.com/dfinlab/meter/api/utils"
 	"github.com/dfinlab/meter/chain"
 	"github.com/dfinlab/meter/consensus"
+	"github.com/dfinlab/meter/powpool"
 	"github.com/dfinlab/meter/script/staking"
+	"github.com/dfinlab/meter/txpool"
 )
 
 type Probe struct {
@@ -32,6 +35,8 @@ func (p *Probe) HandleProbe(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	txs := txpool.GetGlobTxPoolInst()
+	pows := powpool.GetGlobPowPoolInst()
 	bestBlock, _ := convertBlock(p.Chain.BestBlock())
 	bestQC, _ := convertQC(p.Chain.BestQC())
 	bestQCCandidate, _ := convertQC(p.Chain.BestQCCandidate())
@@ -47,8 +52,32 @@ func (p *Probe) HandleProbe(w http.ResponseWriter, r *http.Request) {
 		QCHigh:             qcHigh,
 		IsCommitteeMember:  p.Cons.IsCommitteeMember(),
 		IsPacemakerRunning: p.Cons.IsPacemakerRunning(),
+		TxPool:             &TxPool{Executables: txs.ExecutablesCount(), Total: txs.TotalCount()},
+		PowPool:            &PowPool{Total: pows.TotalCount()},
+		ChainCache:         &ChainCache{RawBlocks: p.Chain.RawBlockCount(), Receipts: p.Chain.ReceiptCount(), Roots: p.Chain.RootCount(), Tries: p.Chain.TrieCount()},
+		ProposalMap:        p.Cons.GetProposalMapCount(),
 	}
 
+	utils.WriteJSON(w, result)
+}
+
+func (p *Probe) HandleProbeMem(w http.ResponseWriter, r *http.Request) {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	unit := uint64(1024 * 1024)
+	result := ProbeMemResult{
+		Alloc:        m.Alloc / unit,
+		HeapAlloc:    m.HeapAlloc / unit,
+		HeapSys:      m.HeapSys / unit,
+		HeapIdle:     m.HeapIdle / unit,
+		HeapReleased: m.HeapReleased / unit,
+		StackInuse:   m.StackInuse / unit,
+		StackSys:     m.StackSys / unit,
+		MSpanInuse:   m.MSpanInuse / unit,
+		MSpanSys:     m.MSpanSys / unit,
+		MCacheInuse:  m.MCacheInuse / unit,
+		MCacheSys:    m.MCacheSys / unit,
+	}
 	utils.WriteJSON(w, result)
 }
 

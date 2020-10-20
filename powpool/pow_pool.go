@@ -333,6 +333,10 @@ func (p *PowPool) GetPowDecision() (bool, *PowResult) {
 // 	return nil
 // }
 
+func (p *PowPool) TotalCount() int {
+	return p.all.Len()
+}
+
 func (p *PowPool) ReplayFrom(startHeight int32) error {
 
 	host := fmt.Sprintf("%v:%v", p.options.Node, p.options.Port)

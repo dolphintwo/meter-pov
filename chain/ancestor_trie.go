@@ -8,12 +8,12 @@ package chain
 import (
 	"encoding/binary"
 
-	lru "github.com/hashicorp/golang-lru"
-	"github.com/pkg/errors"
 	"github.com/dfinlab/meter/block"
 	"github.com/dfinlab/meter/kv"
 	"github.com/dfinlab/meter/meter"
 	"github.com/dfinlab/meter/trie"
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/pkg/errors"
 )
 
 const rootCacheLimit = 2048
@@ -29,6 +29,20 @@ func newAncestorTrie(kv kv.GetPutter) *ancestorTrie {
 		return loadBlockNumberIndexTrieRoot(kv, key.(meter.Bytes32))
 	})
 	return &ancestorTrie{kv, rootsCache, newTrieCache()}
+}
+
+func (at *ancestorTrie) RootCount() int {
+	if at != nil && at.rootsCache != nil {
+		return at.rootsCache.Cache.Len()
+	}
+	return 0
+}
+
+func (at *ancestorTrie) TrieCount() int {
+	if at != nil && at.trieCache != nil {
+		return at.trieCache.cache.Len()
+	}
+	return 0
 }
 
 func numberAsKey(num uint32) []byte {

@@ -475,6 +475,7 @@ func startObserveServer(ctx *cli.Context, cons *consensus.ConsensusReactor, comp
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/probe", probe.HandleProbe)
+	mux.HandleFunc("/probe/mem", probe.HandleProbeMem)
 	mux.HandleFunc("/probe/version", probe.HandleVersion)
 	mux.HandleFunc("/probe/pubkey", probe.HandlePubkey)
 	mux.HandleFunc("/probe/peers", probe.HandlePeers)

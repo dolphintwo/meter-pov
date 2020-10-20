@@ -1207,3 +1207,10 @@ func (p *Pacemaker) OnReceiveQueryProposal(mi *consensusMsgInfo) error {
 	}
 	return nil
 }
+
+func (p *Pacemaker) ProposalMapCount() int {
+	if p != nil && p.proposalMap != nil {
+		return p.proposalMap.Len()
+	}
+	return 0
+}
