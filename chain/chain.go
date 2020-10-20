@@ -226,6 +226,34 @@ func New(kv kv.GetPutter, genesisBlock *block.Block, verbose bool) (*Chain, erro
 	return c, nil
 }
 
+func (c *Chain) ReceiptCount() int {
+	if c != nil && c.caches.receipts != nil {
+		return c.caches.receipts.Cache.Len()
+	}
+	return 0
+}
+
+func (c *Chain) RawBlockCount() int {
+	if c != nil && c.caches.rawBlocks != nil {
+		return c.caches.rawBlocks.Cache.Len()
+	}
+	return 0
+}
+
+func (c *Chain) RootCount() int {
+	if c != nil && c.ancestorTrie != nil {
+		return c.ancestorTrie.RootCount()
+	}
+	return 0
+}
+
+func (c *Chain) TrieCount() int {
+	if c != nil && c.ancestorTrie != nil {
+		return c.ancestorTrie.TrieCount()
+	}
+	return 0
+}
+
 // Tag returns chain tag, which is the last byte of genesis id.
 func (c *Chain) Tag() byte {
 	return c.tag

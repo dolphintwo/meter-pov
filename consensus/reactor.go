@@ -1646,3 +1646,10 @@ func (conR *ConsensusReactor) GetQCHigh() *block.QuorumCert {
 	}
 	return conR.csPacemaker.QCHigh.QC
 }
+
+func (conR *ConsensusReactor) GetProposalMapCount() int {
+	if conR.csPacemaker == nil {
+		return 0
+	}
+	return conR.csPacemaker.ProposalMapCount()
+}

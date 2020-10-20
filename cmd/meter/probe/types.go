@@ -77,15 +77,49 @@ func convertBlock(b *block.Block) (*Block, error) {
 	return result, nil
 }
 
+type ChainCache struct {
+	Receipts  int `json:"receipts"`
+	RawBlocks int `json:"rawBlocks"`
+	Roots     int `json:"roots"`
+	Tries     int `json:"tries"`
+}
+
+type TxPool struct {
+	Executables int `json:"executables"`
+	Total       int `json:"total"`
+}
+
+type PowPool struct {
+	Total int `json:"total"`
+}
+
+type ProbeMemResult struct {
+	Alloc        uint64 `json:"alloc"`
+	HeapAlloc    uint64 `json:"heapAlloc"`
+	HeapSys      uint64 `json:"heapSys"`
+	HeapIdle     uint64 `json:"heapIdle"`
+	HeapReleased uint64 `json:"heapReleased"`
+	StackInuse   uint64 `json:"stackInuse"`
+	StackSys     uint64 `json:"stackSys"`
+	MSpanInuse   uint64 `json:"mSpanInuse"`
+	MSpanSys     uint64 `json:"mSpanSys"`
+	MCacheInuse  uint64 `json:"mCacheInuse"`
+	MCacheSys    uint64 `json:"mCacheSys"`
+}
+
 type ProbeResult struct {
-	Name            string `json:"name"`
-	PubKey          string `json:"pubkey"`
-	PubKeyValid     bool   `json:"pubkeyValid"`
-	Version         string `json:"version"`
-	BestBlock       *Block `json:"bestBlock"`
-	BestQC          *QC    `json:"bestQC"`
-	BestQCCandidate *QC    `json:"bestQCCandidate"`
-	QCHigh          *QC    `json:"qcHigh"`
+	Name            string      `json:"name"`
+	PubKey          string      `json:"pubkey"`
+	PubKeyValid     bool        `json:"pubkeyValid"`
+	Version         string      `json:"version"`
+	BestBlock       *Block      `json:"bestBlock"`
+	BestQC          *QC         `json:"bestQC"`
+	BestQCCandidate *QC         `json:"bestQCCandidate"`
+	QCHigh          *QC         `json:"qcHigh"`
+	TxPool          *TxPool     `json:"txpool"`
+	PowPool         *PowPool    `json:"powpool"`
+	ChainCache      *ChainCache `json:"chainCache"`
+	ProposalMap     int         `json:"proposalMap"`
 
 	IsCommitteeMember  bool `json:"isCommitteeMember"`
 	IsPacemakerRunning bool `json:"isPacemakerRunning"`
