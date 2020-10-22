@@ -66,11 +66,15 @@ func (p *Probe) HandleProbeMem(w http.ResponseWriter, r *http.Request) {
 	runtime.ReadMemStats(&m)
 	unit := uint64(1024 * 1024)
 	result := ProbeMemResult{
-		Alloc:        m.Alloc / unit,
+		TotalAlloc:   m.TotalAlloc / unit,
+		Sys:          m.Sys / unit,
+		Frees:        m.Sys / unit,
 		HeapAlloc:    m.HeapAlloc / unit,
 		HeapSys:      m.HeapSys / unit,
 		HeapIdle:     m.HeapIdle / unit,
 		HeapReleased: m.HeapReleased / unit,
+		HeapInuse:    m.HeapInuse / unit,
+		HeapObjects:  m.HeapObjects,
 		StackInuse:   m.StackInuse / unit,
 		StackSys:     m.StackSys / unit,
 		MSpanInuse:   m.MSpanInuse / unit,
