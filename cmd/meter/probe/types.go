@@ -94,11 +94,15 @@ type PowPool struct {
 }
 
 type ProbeMemResult struct {
-	Alloc        uint64 `json:"alloc"`
+	TotalAlloc   uint64 `json:"totalAlloc"`
+	Sys          uint64 `json:"sys"`
+	Frees        uint64 `json:"frees"`
 	HeapAlloc    uint64 `json:"heapAlloc"`
 	HeapSys      uint64 `json:"heapSys"`
 	HeapIdle     uint64 `json:"heapIdle"`
+	HeapInuse    uint64 `json:"heapInuse"`
 	HeapReleased uint64 `json:"heapReleased"`
+	HeapObjects  uint64 `json:"heapObjects"`
 	StackInuse   uint64 `json:"stackInuse"`
 	StackSys     uint64 `json:"stackSys"`
 	MSpanInuse   uint64 `json:"mSpanInuse"`
