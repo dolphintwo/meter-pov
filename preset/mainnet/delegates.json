@@ -90,12 +90,12 @@
     }
   },
   {
-    "name": "main-10",
+    "name": "edison-10",
     "address": "0x31A645D4303216FeCcf15E3408cD934deaA11961",
     "pub_key": "BF+pjkGM9bDnjjRIEt+3W82sMj5vfcOm5EVTKQnUUtpP5DZS/ranmGy5/pPmz3/CxvtjcGiCuRNdem78kNg85yM=:::jMotv64MoMcQZLniGahXEWsZsAK18ycvZ9t1rxFOqQuwfGchEcqrWCS0YR9hJrkPd2Ny7kQETGXsTDSNapaZJwE=",
     "voting_power": 100,
     "network_addr": {
-      "ip": "54.165.72.209",
+      "ip": "18.159.127.35",
       "port": 8670
     }
   },
