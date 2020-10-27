@@ -80,12 +80,12 @@
     }
   },
   {
-    "name": "main-09",
+    "name": "edison-09",
     "address": "0x6C814A9176922f462f0D21dcB512693212Ca5A88",
     "pub_key": "BJQkmBX6K24DPM920sK5CxRFEEzfGA0wIzNR/bTUpXBEp9AkNEArZJ/eMPBX7E/kcPvrv+VpESLH+ECs3wuUOdQ=:::OeyP//h+fig22Sh6uFL3ktVtOTyyPq2RAYbNmXCgRIRpcliJh2X6zOExIaZZbhv0SrDYPbSxEbhjW4mrOoX3PQA=",
     "voting_power": 100,
     "network_addr": {
-      "ip": "3.127.83.213",
+      "ip": "3.127.246.0",
       "port": 8670
     }
   },
@@ -100,12 +100,12 @@
     }
   },
   {
-    "name": "main-11",
+    "name": "edison-11",
     "address": "0xE135AF414Ef577807d85F292DcE067Cf20964971",
     "pub_key": "BOwo7bnxahUTL4DeSGo4ioZqocs1LjY7h9drAVP/HVHmXBD3WVDJrUIhzcIR3XpyzShw9RWxS0Oi788mEisVGSE=:::ZbPc7iPjBmHapOKNusHK8ux8791J65xQrgFTUGpEpqOWh2cF4bstR2q6QO5hi/SykqeVvw6pqiI22IIlP50EOwE=",
     "voting_power": 100,
     "network_addr": {
-      "ip": "54.209.188.133",
+      "ip": "18.193.104.143",
       "port": 8670
     }
   }
