@@ -16,6 +16,7 @@ import (
 
 	"github.com/dfinlab/meter/meter"
 	"github.com/dfinlab/meter/metric"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -60,7 +61,7 @@ type body struct {
 	Signature    []byte
 }
 
-func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockID meter.Bytes32) (*Transaction, error) {
+func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockRef BlockRef) (*Transaction, error) {
 	msg, err := ethTx.AsMessage(types.NewEIP155Signer(ethTx.ChainId()))
 	fmt.Println(err)
 	if err != nil {
@@ -71,6 +72,8 @@ func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockID me
 	fmt.Println("value:", msg.Value())
 	fmt.Println("gas:", msg.Gas()+2000)
 	fmt.Println("nonce:", msg.Nonce())
+	fmt.Println("blockRef: ", blockRef.Number())
+	fmt.Println("blockRef: ", hexutil.Encode(blockRef[:]))
 	from, err := meter.ParseAddress(msg.From().Hex())
 	if err != nil {
 		return nil, err
@@ -91,9 +94,9 @@ func NewTransactionFromEthTx(ethTx *types.Transaction, chainTag byte, blockID me
 	tx := &Transaction{
 		body: body{
 			ChainTag:     chainTag,
-			BlockRef:     blockRefNum,
-			Expiration:   32,
-			Clauses:      []*Clause{&Clause{body: clauseBody{To: &to, Value: value, Token: 0, Data: []byte{}}}},
+			BlockRef:     uint64(blockRef.Number()),
+			Expiration:   320,
+			Clauses:      []*Clause{&Clause{body: clauseBody{To: &to, Value: value, Token: 0, Data: []byte("0x")}}},
 			GasPriceCoef: 128,
 			Gas:          msg.Gas() + 2000,
 			DependsOn:    nil,
