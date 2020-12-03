@@ -17,6 +17,7 @@ var (
 	bestBlockKey        = []byte("best")
 	blockPrefix         = []byte("b") // (prefix, block id) -> block
 	txMetaPrefix        = []byte("t") // (prefix, tx id) -> tx location
+	accountMetaPrefix   = []byte("a") // (prefix, address) -> account meta (nonce, etc.)
 	blockReceiptsPrefix = []byte("r") // (prefix, block id) -> receipts
 	indexTrieRootPrefix = []byte("i") // (prefix, block id) -> trie root
 	leafBlockKey        = []byte("leaf")
@@ -31,6 +32,10 @@ type TxMeta struct {
 	Index uint64 // rlp require uint64.
 
 	Reverted bool
+}
+
+type AccountMeta struct {
+	Nonce uint64
 }
 
 func saveRLP(w kv.Putter, key []byte, val interface{}) error {
@@ -105,6 +110,23 @@ func loadBlockNumberIndexTrieRoot(r kv.Getter, id meter.Bytes32) (meter.Bytes32,
 		return meter.Bytes32{}, err
 	}
 	return meter.BytesToBytes32(root), nil
+}
+
+// saveAccountNonce save nonce of account
+func saveAccountMeta(w kv.Putter, address meter.Address, meta AccountMeta) error {
+	return saveRLP(w, append(accountMetaPrefix, address[:]...), meta)
+}
+
+func deleteAccountMeta(w kv.Putter, address meter.Address) error {
+	return w.Delete(append(accountMetaPrefix, address[:]...))
+}
+
+func loadAccountMeta(r kv.Getter, address meter.Address) (AccountMeta, error) {
+	var meta AccountMeta
+	if err := loadRLP(r, append(accountMetaPrefix, address[:]...), &meta); err != nil {
+		return AccountMeta{}, err
+	}
+	return meta, nil
 }
 
 // saveTxMeta save locations of a tx.

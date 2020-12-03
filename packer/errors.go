@@ -12,6 +12,7 @@ var (
 	errTxNotAdoptableNow     = errors.New("tx not adoptable now")
 	errTxNotAdoptableForever = errors.New("tx not adoptable forever")
 	errKnownTx               = errors.New("known tx")
+	errInvalidEthNonce       = errors.New("provided nonce is less than or equal to account nonce (eth tx)")
 )
 
 // IsGasLimitReached block if full of txs.

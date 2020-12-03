@@ -329,6 +329,38 @@ func (t *Transaction) Signature() []byte {
 	return append([]byte(nil), t.body.Signature...)
 }
 
+func (t *Transaction) IsTranslatedEthTx() bool {
+	if len(t.body.Reserved) != 3 {
+		return false
+	}
+	reserved := t.body.Reserved
+	prefix := reserved[0].([]byte)
+	prefixStr := hex.EncodeToString(prefix)
+	return prefixStr == hex.EncodeToString(RESERVED_PREFIX) && len(t.body.Signature) >= 65
+}
+
+func (t *Transaction) ToEthTx() (*types.Transaction, error) {
+	if !t.IsTranslatedEthTx() {
+		return nil, errors.New("not translated from ethereum tx")
+	}
+	ethTx := types.Transaction{}
+	stream := rlp.NewStream(bytes.NewReader(t.body.Reserved[2].([]byte)), 0)
+	err := ethTx.DecodeRLP(stream)
+	if err != nil {
+		fmt.Println("raw tx ERR: ", err)
+		return nil, err
+	}
+	return &ethTx, nil
+}
+
+func (t *Transaction) ToEthMessage() (types.Message, error) {
+	ethTx, err := t.ToEthTx()
+	if err != nil {
+		return types.Message{}, err
+	}
+	return ethTx.AsMessage(types.NewEIP155Signer(ethTx.ChainId()))
+}
+
 // Signer extract signer of tx from signature.
 func (t *Transaction) Signer() (signer meter.Address, err error) {
 	// set the origin to nil if no signature

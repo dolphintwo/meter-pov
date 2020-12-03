@@ -377,6 +377,21 @@ func (c *Chain) AddBlock(newBlock *block.Block, receipts tx.Receipts, finalize b
 		if err := saveTxMeta(batch, tx.ID(), meta); err != nil {
 			return nil, err
 		}
+
+		if tx.IsTranslatedEthTx() {
+			msg, err := tx.ToEthMessage()
+			if err != nil {
+				return nil, err
+			}
+			from, err := meter.ParseAddress(msg.From().Hex())
+			if err != nil {
+				return nil, err
+			}
+			acctMeta := AccountMeta{Nonce: msg.Nonce()}
+			if err := saveAccountMeta(batch, from, acctMeta); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	var fork *Fork
@@ -479,6 +494,13 @@ func (c *Chain) GetAncestorBlockID(descendantID meter.Bytes32, ancestorNum uint3
 	c.rw.RLock()
 	defer c.rw.RUnlock()
 	return c.ancestorTrie.GetAncestor(descendantID, ancestorNum)
+}
+
+// GetAccountMeta get account meta info, on the chain defined by head block ID.
+func (c *Chain) GetAccountMeta(address meter.Address) (*AccountMeta, error) {
+	c.rw.RLock()
+	defer c.rw.RUnlock()
+	return c.getAccountMeta(address)
 }
 
 // GetTransactionMeta get transaction meta info, on the chain defined by head block ID.
@@ -695,6 +717,14 @@ func (c *Chain) getBlockReceipts(blockID meter.Bytes32) (tx.Receipts, error) {
 		return nil, err
 	}
 	return receipts.(tx.Receipts), nil
+}
+
+func (c *Chain) getAccountMeta(address meter.Address) (*AccountMeta, error) {
+	meta, err := loadAccountMeta(c.kv, address)
+	if err != nil {
+		return nil, err
+	}
+	return &meta, nil
 }
 
 func (c *Chain) getTransactionMeta(txID meter.Bytes32, headBlockID meter.Bytes32) (*TxMeta, error) {

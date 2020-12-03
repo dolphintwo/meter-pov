@@ -350,6 +350,7 @@ func (c *ConsensusReactor) verifyBlock(blk *block.Block, state *state.State) (*s
 	txs := blk.Transactions()
 	receipts := make(tx.Receipts, 0, len(txs))
 	processedTxs := make(map[meter.Bytes32]bool)
+	acctNonces := make(map[meter.Address]uint64)
 	header := blk.Header()
 	signer, _ := header.Signer()
 	rt := runtime.New(
@@ -377,6 +378,19 @@ func (c *ConsensusReactor) verifyBlock(blk *block.Block, state *state.State) (*s
 		}
 		return true, meta.Reverted, nil
 	}
+	findAccountNonce := func(address meter.Address) (found bool, nonce uint64, err error) {
+		if nonce, ok := acctNonces[address]; ok {
+			return true, nonce, nil
+		}
+		meta, err := c.chain.GetAccountMeta(address)
+		if err != nil {
+			if c.chain.IsNotFound(err) {
+				return false, 0, nil
+			}
+			return false, 0, err
+		}
+		return true, meta.Nonce, nil
+	}
 
 	for _, tx := range txs {
 		// Mint transaction critiers:
@@ -399,6 +413,24 @@ func (c *ConsensusReactor) verifyBlock(blk *block.Block, state *state.State) (*s
 			return nil, nil, err
 		} else if found {
 			return nil, nil, consensusError("tx already exists")
+		}
+
+		ethNonce := uint64(0)
+		var ethFrom meter.Address
+		if tx.IsTranslatedEthTx() {
+			msg, err := tx.ToEthMessage()
+			ethNonce = msg.Nonce()
+			ethFrom, err = meter.ParseAddress(msg.From().Hex())
+			if err != nil {
+				return nil, nil, err
+			}
+			found, acctNonce, err := findAccountNonce(ethFrom)
+			if err != nil {
+				return nil, nil, err
+			}
+			if found && ethNonce <= acctNonce {
+				return nil, nil, consensusError("provided nonce is less than or equal to account nonce")
+			}
 		}
 
 		// check depended tx
@@ -424,6 +456,9 @@ func (c *ConsensusReactor) verifyBlock(blk *block.Block, state *state.State) (*s
 		totalGasUsed += receipt.GasUsed
 		receipts = append(receipts, receipt)
 		processedTxs[tx.ID()] = receipt.Reverted
+		if tx.IsTranslatedEthTx() {
+			acctNonces[ethFrom] = ethNonce
+		}
 	}
 
 	if header.GasUsed() != totalGasUsed {

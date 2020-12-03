@@ -22,7 +22,8 @@ type Flow struct {
 	packer       *Packer
 	parentHeader *block.Header
 	runtime      *runtime.Runtime
-	processedTxs map[meter.Bytes32]bool // txID -> reverted
+	processedTxs map[meter.Bytes32]bool   // txID -> reverted
+	acctNonces   map[meter.Address]uint64 // address -> nonce
 	gasUsed      uint64
 	txs          tx.Transactions
 	receipts     tx.Receipts
@@ -38,6 +39,7 @@ func newFlow(
 		parentHeader: parentHeader,
 		runtime:      runtime,
 		processedTxs: make(map[meter.Bytes32]bool),
+		acctNonces:   make(map[meter.Address]uint64),
 	}
 }
 
@@ -63,6 +65,20 @@ func (f *Flow) findTx(txID meter.Bytes32) (found bool, reverted bool, err error)
 		return false, false, err
 	}
 	return true, txMeta.Reverted, nil
+}
+
+func (f *Flow) findAccountNonce(address meter.Address) (found bool, nonce uint64, err error) {
+	if nonce, ok := f.acctNonces[address]; ok {
+		return true, nonce, nil
+	}
+	meta, err := f.packer.chain.GetAccountMeta(address)
+	if err != nil {
+		if f.packer.chain.IsNotFound(err) {
+			return false, 0, nil
+		}
+		return false, 0, err
+	}
+	return true, meta.Nonce, nil
 }
 
 // Adopt try to execute the given transaction.
@@ -94,6 +110,24 @@ func (f *Flow) Adopt(tx *tx.Transaction) error {
 		return errKnownTx
 	}
 
+	ethNonce := uint64(0)
+	var ethFrom meter.Address
+	if tx.IsTranslatedEthTx() {
+		msg, err := tx.ToEthMessage()
+		ethNonce = msg.Nonce()
+		ethFrom, err = meter.ParseAddress(msg.From().Hex())
+		if err != nil {
+			return err
+		}
+		found, acctNonce, err := f.findAccountNonce(ethFrom)
+		if err != nil {
+			return err
+		}
+		if found && ethNonce <= acctNonce {
+			return errInvalidEthNonce
+		}
+	}
+
 	if dependsOn := tx.DependsOn(); dependsOn != nil {
 		// check if deps exists
 		found, reverted, err := f.findTx(*dependsOn)
@@ -116,6 +150,9 @@ func (f *Flow) Adopt(tx *tx.Transaction) error {
 		return badTxError{err.Error()}
 	}
 	f.processedTxs[tx.ID()] = receipt.Reverted
+	if tx.IsTranslatedEthTx() {
+		f.acctNonces[ethFrom] = ethNonce
+	}
 	f.gasUsed += receipt.GasUsed
 	f.receipts = append(f.receipts, receipt)
 	f.txs = append(f.txs, tx)
