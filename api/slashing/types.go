@@ -1,9 +1,7 @@
 package slashing
 
 import (
-	"fmt"
 	"sort"
-	"time"
 
 	"github.com/dfinlab/meter/meter"
 	"github.com/dfinlab/meter/script/staking"
@@ -15,7 +13,7 @@ type DelegateJailed struct {
 	PubKey      string        `json:"pubKey"`
 	TotalPoints uint64        `json:"totalPoints"`
 	BailAmount  string        `json:"bailAmount"`
-	JailedTime  string        `json:"jailedTime"`
+	JailedTime  uint64        `json:"jailedTime"`
 }
 
 //
@@ -89,7 +87,7 @@ func convertDelegateJailed(d *staking.DelegateJailed) *DelegateJailed {
 		PubKey:      string(d.PubKey),
 		TotalPoints: d.TotalPts,
 		BailAmount:  d.BailAmount.String(),
-		JailedTime:  fmt.Sprintln(time.Unix(int64(d.JailedTime), 0)),
+		JailedTime:  d.JailedTime,
 	}
 }
 
